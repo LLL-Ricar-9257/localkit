@@ -217,6 +217,125 @@ test.describe('键盘可达性', () => {
   });
 });
 
+test.describe('首页搜索与分类筛选', () => {
+  /* 断言一律用 :visible 而不是查 hidden 属性——「属性设对了但 CSS 覆盖掉」
+   * 正是这个功能最容易出的问题（.tool-card 是 display:flex，会盖住 [hidden]）。 */
+
+  test('默认展示全部 20 个工具，且状态行为空', async ({ page }) => {
+    await page.goto('/index.html');
+    await expect(page.locator('.tool-card:visible')).toHaveCount(20);
+    await expect(page.locator('#filterStatus')).toHaveText('');
+  });
+
+  test('关键词命中唯一工具时只剩一张卡片', async ({ page }) => {
+    await page.goto('/index.html');
+    await page.fill('#toolSearch', 'watermark');
+    await expect(page.locator('.tool-card:visible')).toHaveCount(1);
+    await expect(page.locator('.tool-card:visible')).toHaveAttribute('href', 'tools/image-watermark.html');
+  });
+
+  test('多词按「全部命中」处理（缩小范围而不是放大）', async ({ page }) => {
+    await page.goto('/index.html');
+    await page.fill('#toolSearch', 'pdf');
+    const pdfOnly = await page.locator('.tool-card:visible').count();
+    await page.fill('#toolSearch', 'pdf merge');
+    const both = await page.locator('.tool-card:visible').count();
+
+    expect(both).toBeGreaterThan(0);
+    expect(both, '多一个词应当收窄结果').toBeLessThan(pdfOnly);
+  });
+
+  test('中文界面下输入英文术语也能命中（用户习惯用英文词搜索）', async ({ page }) => {
+    // 这条盯的是 LKI.tIn('en', …) 那一路：中文界面的可见文案里没有 "watermark"，
+    // 只有把英文原文一并纳入匹配范围才命中。
+    await setLang(page, 'zh');
+    await page.goto('/index.html');
+    await expect(page.locator('h1')).toContainText('免费');
+
+    await page.fill('#toolSearch', 'watermark');
+    await expect(page.locator('.tool-card:visible')).toHaveCount(1);
+  });
+
+  test('分类筛选只留下该分类的卡片，且其余分类整段隐藏', async ({ page }) => {
+    await page.goto('/index.html');
+    await page.click('#catFilter .chip[data-cat="docs"]');
+
+    const visible = await page.locator('.tool-card:visible').count();
+    const inDocs = await page.locator('section[data-cat="docs"] .tool-card:visible').count();
+    expect(visible).toBeGreaterThan(0);
+    expect(visible, '可见卡片必须全部来自 docs 分类').toBe(inDocs);
+
+    for (const cat of ['image', 'text', 'dev']) {
+      await expect(page.locator(`section[data-cat="${cat}"]`), `${cat} 分区应整段隐藏`).toBeHidden();
+    }
+  });
+
+  test('搜索与分类可以叠加', async ({ page }) => {
+    await setLang(page, 'en');   // 断言的是英文提示文案，必须显式指定语言
+    await page.goto('/index.html');
+    await page.click('#catFilter .chip[data-cat="docs"]');
+    await page.fill('#toolSearch', 'watermark');   // watermark 属于 image 分类
+    await expect(page.locator('.tool-card:visible')).toHaveCount(0);
+    await expect(page.locator('#filterStatus')).toContainText('No tool matches');
+  });
+
+  test('无结果时给出提示，且不残留任何卡片', async ({ page }) => {
+    await page.goto('/index.html');
+    await page.fill('#toolSearch', 'zzzznope');
+    await expect(page.locator('.tool-card:visible')).toHaveCount(0);
+    await expect(page.locator('#filterStatus')).toContainText('No tool matches');
+  });
+
+  test('命中计数与实际可见数量一致', async ({ page }) => {
+    await setLang(page, 'en');   // 计数文案的格式因语言而异，显式指定避免依赖运行环境的默认 locale
+    await page.goto('/index.html');
+    await page.fill('#toolSearch', 'pdf');
+    const n = await page.locator('.tool-card:visible').count();
+    // 计数文案与实际可见数必须对上——两者由同一处逻辑产出，写错就会互相矛盾
+    await expect(page.locator('#filterStatus')).toHaveText(`${n} of 20 tools`);
+  });
+
+  test('筛选生效时收起补充内容，清空后原样恢复', async ({ page }) => {
+    await page.goto('/index.html');
+    const extra = page.locator('main .block:not([data-cat])');
+    expect(await extra.count(), '首页应有非工具分区（Why / FAQ）').toBeGreaterThan(0);
+    await expect(extra.first()).toBeVisible();
+
+    await page.fill('#toolSearch', 'pdf');
+    for (let i = 0; i < await extra.count(); i++) {
+      await expect(extra.nth(i), '筛选时补充内容应收起').toBeHidden();
+    }
+
+    await page.fill('#toolSearch', '');
+    await expect(page.locator('.tool-card:visible')).toHaveCount(20);
+    await expect(extra.first(), '清空后应恢复').toBeVisible();
+    await expect(page.locator('#filterStatus')).toHaveText('');
+  });
+
+  test('按 / 聚焦搜索框，Esc 清空并取消聚焦', async ({ page }) => {
+    await page.goto('/index.html');
+    await page.locator('body').click();
+    await page.keyboard.press('/');
+    await expect(page.locator('#toolSearch')).toBeFocused();
+
+    await page.fill('#toolSearch', 'pdf');
+    await expect(page.locator('.tool-card:visible')).not.toHaveCount(20);
+
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#toolSearch')).toHaveValue('');
+    await expect(page.locator('.tool-card:visible')).toHaveCount(20);
+    await expect(page.locator('#toolSearch')).not.toBeFocused();
+  });
+
+  test('分类按钮的选中态跟着点击走，且始终只有一个', async ({ page }) => {
+    await page.goto('/index.html');
+    await expect(page.locator('#catFilter .chip.on')).toHaveCount(1);
+    await page.click('#catFilter .chip[data-cat="text"]');
+    await expect(page.locator('#catFilter .chip.on')).toHaveCount(1);
+    await expect(page.locator('#catFilter .chip[data-cat="text"]')).toHaveClass(/\bon\b/);
+  });
+});
+
 test.describe('站点结构完整性', () => {
   test('首页列出了全部 20 个工具卡片', async ({ page }) => {
     await page.goto('/index.html');

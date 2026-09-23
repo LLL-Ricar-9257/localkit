@@ -26,6 +26,15 @@
       'index.h1a': 'Free online tools that ',
       'index.h1b': 'never upload your files',
       'index.sub': 'Compress images, convert formats, merge PDFs and more — right inside your browser. No uploads, no sign-up, no waiting. Nothing to install, nothing stored anywhere.',
+      'index.search.label': 'Search tools',
+      'index.search.ph': 'Search tools — try “pdf” or “compress”',
+      'index.filter.all': 'All',
+      'index.filter.image': 'Images',
+      'index.filter.docs': 'Documents',
+      'index.filter.text': 'Text',
+      'index.filter.dev': 'Developer',
+      'index.count': '{n} of {total} tools',
+      'index.noresults': 'No tool matches that. Try a shorter keyword — for example “pdf” or “hash”.',
       'index.why.h2': 'Why LocalKit is different',
       'index.why1.t': '🔒 Private by design',
       'index.why1.d': 'Every tool runs 100% in your browser using JavaScript and WebAssembly. Your files are never sent to — or stored on — any server. Offline? Most tools still work.',
@@ -599,6 +608,15 @@
       'index.h1a': '免费在线工具，',
       'index.h1b': '永不上传你的文件',
       'index.sub': '压缩图片、转换格式、合并 PDF……全部在浏览器内完成。无需上传、无需注册、无需等待，不安装任何东西，也不在任何地方存储。',
+      'index.search.label': '搜索工具',
+      'index.search.ph': '搜索工具——试试「PDF」或「压缩」',
+      'index.filter.all': '全部',
+      'index.filter.image': '图片',
+      'index.filter.docs': '文档',
+      'index.filter.text': '文本',
+      'index.filter.dev': '开发',
+      'index.count': '{total} 个工具中的 {n} 个',
+      'index.noresults': '没有匹配的工具。换个更短的关键词试试，比如「PDF」或「哈希」。',
       'index.why.h2': 'LocalKit 有什么不同',
       'index.why1.t': '🔒 隐私优先的设计',
       'index.why1.d': '每个工具都用 JavaScript 与 WebAssembly 在你的浏览器里 100% 本地运行。文件不会被发送到——也不会被存储在任何服务器上。断网？大多数工具照常能用。',
@@ -1161,9 +1179,15 @@
     /* 页面注册的回调：每次翻译落地后触发，用于同步由 JS 管理的 DOM（如按 config.js 改写链接） */
     onApply: [],
     t: function (key, vars) {
-      let s = (D[this.lang] && D[this.lang][key]) || D.en[key] || key;
+      let s = this.tIn(this.lang, key);
       if (vars) for (const k in vars) s = s.split('{' + k + '}').join(vars[k]);
       return s;
+    },
+    /* 取指定语言的文案，不受当前语言影响。
+     * 首页搜索需要它：中文界面下输入 "compress" 也应该命中「压缩图片」——
+     * 用户输入的往往是他习惯的英文术语，而不是界面当前语言的词。 */
+    tIn: function (lang, key) {
+      return (D[lang] && D[lang][key]) || D.en[key] || key;
     },
     apply: function (lang) {
       if (!D[lang]) lang = 'en';

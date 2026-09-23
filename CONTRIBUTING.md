@@ -54,6 +54,9 @@ CI 会跑同样的命令，任何一项失败都不会合并。这些检查各�
 
 1. 在 `tools/` 下新建一个 HTML 页面，可以直接复制一个相近的工具页改。
 2. 在 `index.html` 对应分类里加一张 `.tool-card`。
+   **搜索会自动收录它**——`assets/home.js` 从卡片上的 `data-i18n` 键取中英两份文案做匹配，
+   所以只要键补齐、卡片落在某个 `data-cat` 分区里，就不需要额外登记。
+   （新增分类才需要动 `data-cat`、筛选按钮与 `index.filter.*` 文案。）
 3. 在 `assets/i18n.js` 里补上**中英两份**文案。
 
 然后跑 `node scripts/gen-sitemap.mjs` 重新生成 `sitemap.xml`——新页面会自动被收录，

@@ -15,6 +15,9 @@
 - ⚡ **Instant** — no upload queue; processing runs at your device's speed.
 - 🆓 **Free and unlimited** — no account, no watermark, no quota. Funded by voluntary donations.
 - 🌐 **Bilingual** — English and Chinese, switchable, follows the browser language by default.
+- 🔎 **Fast to navigate** — keyword search and category filters on the homepage (press `/` to focus the box).
+  Searching in English works even in the Chinese UI, because English copy is part of the match set —
+  people search with the terms they know, not the terms the UI happens to be showing.
 - 📦 **Zero build** — plain static HTML/CSS/JS. Clone and serve; drag-and-drop deploy to Cloudflare Pages / Vercel / GitHub Pages.
 
 ## Tools

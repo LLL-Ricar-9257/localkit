@@ -1,7 +1,7 @@
 {
   "index.html": {
     "lastmod": "2026-09-23",
-    "hash": "62e8b74bc6b2d6ac44349bbc128c73a5cba3a27ec718f33e96335784a6e08de8"
+    "hash": "824b567dc40ff6576d6f1063523323bc6f1794011a3f816835bda956e3c83770"
   },
   "tools/compress-image.html": {
     "lastmod": "2026-09-23",
@@ -17,7 +17,7 @@
   },
   "tools/qr-generator.html": {
     "lastmod": "2026-09-23",
-    "hash": "9619e92559e383727b6196c943cbd9ae95ecac0e47cf050265db6576a9559e4b"
+    "hash": "5be623dbebbe2d58acf0dace14ef891b67666a089053d3417936f4f9eb0c18c6"
   },
   "tools/merge-pdf.html": {
     "lastmod": "2026-09-23",
@@ -37,7 +37,7 @@
   },
   "tools/pdf-to-docx.html": {
     "lastmod": "2026-09-23",
-    "hash": "6af5c2741d7b42b5ee319bc7d9a84efcf9de32fb3df8004ec4d07235c1d1e15e"
+    "hash": "236c5bf29a00a1d4ce747f55c9eb81410406329839eb05739f9bb6c7f048b982"
   },
   "tools/text-diff.html": {
     "lastmod": "2026-09-23",

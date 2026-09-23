@@ -52,7 +52,22 @@
       No uploads, no sign-up, no waiting. Nothing to install, nothing stored anywhere.</p>
     </div>
 
-    <section class="block" style="margin-top:12px">
+    <div class="toolbar" role="search">
+      <label class="sr-only" for="toolSearch" data-i18n="index.search.label">Search tools</label>
+      <input type="search" id="toolSearch" autocomplete="off"
+             data-i18n-ph="index.search.ph"
+             placeholder="Search tools — try “pdf” or “compress”">
+      <div class="chips" id="catFilter">
+        <button type="button" class="chip on" data-cat="all" data-i18n="index.filter.all">All</button>
+        <button type="button" class="chip" data-cat="image" data-i18n="index.filter.image">Images</button>
+        <button type="button" class="chip" data-cat="docs" data-i18n="index.filter.docs">Documents</button>
+        <button type="button" class="chip" data-cat="text" data-i18n="index.filter.text">Text</button>
+        <button type="button" class="chip" data-cat="dev" data-i18n="index.filter.dev">Developer</button>
+      </div>
+      <p class="status" id="filterStatus" role="status"></p>
+    </div>
+
+    <section class="block" data-cat="image" style="margin-top:12px">
       <h2 data-i18n="index.cat.image">🖼️ Image tools</h2>
       <div class="tool-grid">
         <a class="tool-card" href="tools/compress-image.html">
@@ -78,7 +93,7 @@
       </div>
     </section>
 
-    <section class="block">
+    <section class="block" data-cat="docs">
       <h2 data-i18n="index.cat.docs">📄 Document tools</h2>
       <div class="tool-grid">
         <a class="tool-card" href="tools/merge-pdf.html">
@@ -109,7 +124,7 @@
       </div>
     </section>
 
-    <section class="block">
+    <section class="block" data-cat="text">
       <h2 data-i18n="index.cat.text">📝 Text tools</h2>
       <div class="tool-grid">
         <a class="tool-card" href="tools/text-diff.html">
@@ -130,7 +145,7 @@
       </div>
     </section>
 
-    <section class="block">
+    <section class="block" data-cat="dev">
       <h2 data-i18n="index.cat.dev">💻 Developer tools</h2>
       <div class="tool-grid">
         <a class="tool-card" href="tools/json-to-typescript.html">
@@ -217,5 +232,6 @@
     </div>
   </footer>
   <script src="assets/app.js"></script>
+  <script src="assets/home.js"></script>
 </body>
 </html>
