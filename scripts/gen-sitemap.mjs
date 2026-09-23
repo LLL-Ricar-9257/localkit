@@ -130,28 +130,36 @@ const sitemapPath = path.join(ROOT, 'sitemap.xml');
 const normalize = (s) => s.replace(/\r\n/g, '\n');
 
 if (checkOnly) {
-  const problems = [];
+  /* 根因优先：清单与页面内容不一致时，sitemap 的逐行差异只是它的**后果**。
+   * 曾经把两类问题混在一个列表里，结果页面改动较多时（差异行超过展示上限），
+   * 真正的根因被截断隐藏，只剩一堆「第 N 行应为…」——排查时得先猜是哪来的。 */
+  const rootCauses = [];
+  const symptoms = [];
+
+  if (fs.existsSync(manifestPath) && normalize(fs.readFileSync(manifestPath, 'utf8')) !== manifestJson) {
+    rootCauses.push('scripts/sitemap-lastmod.json 与页面内容不一致（有页面改过但未重新生成）');
+  }
 
   if (!fs.existsSync(sitemapPath)) {
-    problems.push('sitemap.xml 不存在');
+    rootCauses.push('sitemap.xml 不存在');
   } else if (normalize(fs.readFileSync(sitemapPath, 'utf8')) !== xml) {
     const a = normalize(fs.readFileSync(sitemapPath, 'utf8')).split('\n');
     const b = xml.split('\n');
     for (let i = 0; i < Math.max(a.length, b.length); i++) {
       if (a[i] !== b[i]) {
-        problems.push(`第 ${i + 1} 行\n      现有 ${a[i] ?? '(缺)'}\n      应为 ${b[i] ?? '(多余)'}`);
+        symptoms.push(`第 ${i + 1} 行\n      现有 ${a[i] ?? '(缺)'}\n      应为 ${b[i] ?? '(多余)'}`);
       }
     }
   }
 
-  if (fs.existsSync(manifestPath) && normalize(fs.readFileSync(manifestPath, 'utf8')) !== manifestJson) {
-    problems.push('scripts/sitemap-lastmod.json 与页面内容不一致（有页面改过但未重新生成）');
-  }
-
-  if (problems.length) {
-    console.log(`✗ sitemap 与生成结果不一致（${problems.length} 处）：`);
-    console.log(problems.slice(0, 10).map(p => '  · ' + p).join('\n'));
-    if (problems.length > 10) console.log(`  …另有 ${problems.length - 10} 处`);
+  if (rootCauses.length || symptoms.length) {
+    console.log('✗ sitemap 与生成结果不一致：');
+    rootCauses.forEach(p => console.log('  ! ' + p));
+    if (symptoms.length) {
+      console.log(`  逐行差异 ${symptoms.length} 处：`);
+      console.log(symptoms.slice(0, 8).map(p => '  · ' + p).join('\n'));
+      if (symptoms.length > 8) console.log(`  …另有 ${symptoms.length - 8} 处（多半是上面那条根因的后果）`);
+    }
     console.log('\n  修复：node scripts/gen-sitemap.mjs');
     process.exit(1);
   }

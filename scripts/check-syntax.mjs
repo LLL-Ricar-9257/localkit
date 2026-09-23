@@ -7,9 +7,11 @@
  *   2. 各页面内联 <script> 的语法（传统脚本语义，用 vm.Script 解析但不执行）
  *   3. <script type="application/ld+json"> 是否为合法 JSON（结构化数据直接关系 SEO）
  *   4. 页面里 src/href 指向的本站资源是否真实存在（防止改路径时漏改某页）
- *   5. canonical 与 sitemap 的地址形态是否一致、是否都指向真实存在的文件
- *   6. 是否残留任何指向第三方 CDN 的引用（本项目承诺零外发请求）
- *   7. LK.loadScript() 按需加载的 vendor 路径是否存在（这些路径不在 HTML 的 src= 属性里）
+ *   5. canonical / og:url / JSON-LD url 三处地址载体是否一致且指向真实存在的页面
+ *      （canonical 与 og:url 必填；缺失即报错，不再静默跳过）
+ *   6. og:image 与 twitter:card 是否存在、是否为绝对地址、指向的文件是否存在
+ *   7. 是否残留任何指向第三方 CDN 的引用（本项目承诺零外发请求）
+ *   8. LK.loadScript() 按需加载的 vendor 路径是否存在（这些路径不在 HTML 的 src= 属性里）
  *
  * 用法：node scripts/check-syntax.mjs
  * 环境变量：LK_ROOT 指定仓库根目录（供自测使用，默认取脚本上一级）
@@ -127,6 +129,7 @@ function urlToRelPath(url) {
 
 let canonicalCount = 0;
 let selfUrlCount = 0;
+let ogImageCount = 0;
 let sitemapCount = 0;
 
 for (const f of htmlFiles) {
@@ -147,16 +150,30 @@ for (const f of htmlFiles) {
 
   /* 「本页地址」有三个载体：canonical、og:url、JSON-LD 的 "url"。
    * 三者必须一致，否则等于对搜索引擎与社交平台给出互相矛盾的地址。
-   * 之前只校验了 canonical，结果迁移时漏掉了另外两处——所以在这里一并锁死。 */
+   * 之前只校验了 canonical，结果迁移时漏掉了另外两处——所以在这里一并锁死。
+   *
+   * canonical 与 og:url 是**必填**，JSON-LD 的 url 可缺（并非每种结构化数据都需要它）。
+   * 这一点曾经是个真实的漏洞：原先缺失的载体直接 continue，于是「23 个页面根本没有
+   * og:url」这件事在 CI 里完全看不见——README 却写着三处都必须写。
+   * 检查对「缺失」沉默，等于把一致性交给运气。 */
   const expected = ownUrl(r);
+  const ogUrl = (src.match(/<meta[^>]+property="og:url"[^>]+content="([^"]+)"/i) || [])[1];
   const carriers = [
-    ['canonical', canonical],
-    ['og:url', (src.match(/<meta[^>]+property="og:url"[^>]+content="([^"]+)"/i) || [])[1]],
-    ...[...src.matchAll(/"url":\s*"(https?:\/\/[^"]+)"/g)].map(m => ['JSON-LD url', m[1]]),
+    ['canonical', canonical, true],
+    ['og:url', ogUrl, true],
+    ...[...src.matchAll(/"url":\s*"(https?:\/\/[^"]+)"/g)].map(m => ['JSON-LD url', m[1], false]),
   ];
 
-  for (const [label, val] of carriers) {
-    if (!val) continue;
+  for (const [label, val, required] of carriers) {
+    if (!val) {
+      if (required) {
+        errors.push(
+          `[self-url] ${r} 缺少 ${label}\n` +
+          `      canonical / og:url 是必填的地址载体，缺失会让社交平台拿不到规范地址。`
+        );
+      }
+      continue;
+    }
     selfUrlCount++;
     if (!val.startsWith(ORIGIN)) {
       errors.push(`[self-url] ${r} 的 ${label} 不是本站地址: ${val}`);
@@ -173,6 +190,36 @@ for (const f of htmlFiles) {
         `      Cloudflare Pages 会把 /foo.html 308 跳到 /foo，应当直接写最终地址。`
       );
     }
+  }
+
+  /* og:image 与 twitter:card：分享到社交平台时的预览图。
+   * 两条容易踩的坑都在这里兜住：
+   *   1) og:image 必须是**绝对地址**——社交平台的抓取器不解析相对路径；
+   *   2) 指向的文件必须真实存在——写错不会有任何报错，只是分享出去没有预览图，
+   *      而这是最难被发现的一类问题（只有真的去分享一次才看得见）。 */
+  const ogImage = (src.match(/<meta[^>]+property="og:image"[^>]+content="([^"]+)"/i) || [])[1];
+  if (!ogImage) {
+    errors.push(`[og:image] ${r} 缺少 og:image（分享到社交平台时没有预览图）`);
+  } else {
+    ogImageCount++;
+    if (!ogImage.startsWith(ORIGIN)) {
+      errors.push(
+        `[og:image] ${r} 的 og:image 不是本站的绝对地址: ${ogImage}\n` +
+        `      社交平台的抓取器不解析相对路径，必须写完整的 https:// 地址。`
+      );
+    } else {
+      const target = ogImage.slice(ORIGIN.length).replace(/^\//, '');
+      if (!fs.existsSync(path.join(ROOT, target))) {
+        errors.push(
+          `[og:image] ${r} 的 og:image 指向的文件不存在: ${target}\n` +
+          `      分享出去会显示不出预览图，且不会有任何运行时报错。`
+        );
+      }
+    }
+  }
+
+  if (!/<meta[^>]+name="twitter:card"/i.test(src)) {
+    errors.push(`[og:image] ${r} 缺少 twitter:card（Twitter/X 需要它才会展示大图卡片）`);
   }
 }
 
@@ -269,6 +316,7 @@ console.log(`本站资源引用     : ${refCount}`);
 console.log(`按需加载路径     : ${vendorRefCount}（LK.loadScript 注入的 vendor 路径）`);
 console.log(`canonical 标签   : ${canonicalCount}（另有 1 个错误页不设 canonical）`);
 console.log(`页面自身地址核对 : ${selfUrlCount} 处（canonical / og:url / JSON-LD url）`);
+console.log(`社交预览图核对   : ${ogImageCount} 处（og:image + twitter:card）`);
 console.log(`sitemap URL      : ${sitemapCount}`);
 console.log('─'.repeat(60));
 

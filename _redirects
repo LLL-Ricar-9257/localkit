@@ -27,6 +27,7 @@
 /playwright.config.js  /  301
 /eslint.config.js      /  301
 /.npmrc                /  301
+/.nvmrc                /  301
 /.editorconfig         /  301
 /.gitattributes        /  301
 /.gitignore            /  301
@@ -34,6 +35,7 @@
 
 # 工程文档（README 等仅面向仓库访客，不属于站点内容）
 /README.md             /  301
+/README.en.md          /  301
 /CONTRIBUTING.md       /  301
 /CHANGELOG.md          /  301
 /SECURITY.md           /  301

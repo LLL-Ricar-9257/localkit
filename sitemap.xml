@@ -1,26 +1,26 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://youngray.asia/</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/compress-image</loc><lastmod>2026-09-16</lastmod></url>
-  <url><loc>https://youngray.asia/tools/convert-image</loc><lastmod>2026-09-16</lastmod></url>
-  <url><loc>https://youngray.asia/tools/image-watermark</loc><lastmod>2026-09-16</lastmod></url>
+  <url><loc>https://youngray.asia/</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/compress-image</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/convert-image</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/image-watermark</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://youngray.asia/tools/qr-generator</loc><lastmod>2026-09-23</lastmod></url>
-  <url><loc>https://youngray.asia/tools/merge-pdf</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/split-pdf</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/pdf-to-image</loc><lastmod>2026-09-15</lastmod></url>
+  <url><loc>https://youngray.asia/tools/merge-pdf</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/split-pdf</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/pdf-to-image</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://youngray.asia/tools/docx-to-pdf</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://youngray.asia/tools/pdf-to-docx</loc><lastmod>2026-09-23</lastmod></url>
-  <url><loc>https://youngray.asia/tools/text-diff</loc><lastmod>2026-09-16</lastmod></url>
-  <url><loc>https://youngray.asia/tools/case-converter</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/text-statistics</loc><lastmod>2026-09-15</lastmod></url>
+  <url><loc>https://youngray.asia/tools/text-diff</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/case-converter</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/text-statistics</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://youngray.asia/tools/json-to-typescript</loc><lastmod>2026-09-23</lastmod></url>
-  <url><loc>https://youngray.asia/tools/json-formatter</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/base64-converter</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/hash-calculator</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/password-generator</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/uuid-generator</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/timestamp-converter</loc><lastmod>2026-09-15</lastmod></url>
-  <url><loc>https://youngray.asia/tools/color-converter</loc><lastmod>2026-09-15</lastmod></url>
+  <url><loc>https://youngray.asia/tools/json-formatter</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/base64-converter</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/hash-calculator</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/password-generator</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/uuid-generator</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/timestamp-converter</loc><lastmod>2026-09-23</lastmod></url>
+  <url><loc>https://youngray.asia/tools/color-converter</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://youngray.asia/about</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://youngray.asia/donate</loc><lastmod>2026-09-23</lastmod></url>
   <url><loc>https://youngray.asia/privacy</loc><lastmod>2026-09-23</lastmod></url>

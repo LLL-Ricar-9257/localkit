@@ -1,98 +1,98 @@
 {
   "index.html": {
-    "lastmod": "2026-09-15",
-    "hash": "26eb6a913879d24ebb3f63e14131b70cfd88dea2917e181d399bb948951321c9"
+    "lastmod": "2026-09-23",
+    "hash": "62e8b74bc6b2d6ac44349bbc128c73a5cba3a27ec718f33e96335784a6e08de8"
   },
   "tools/compress-image.html": {
-    "lastmod": "2026-09-16",
-    "hash": "ed71348dd337a1ec5a8745ed7d8650316ac8946ad94bcb0104d670ff37d22a33"
+    "lastmod": "2026-09-23",
+    "hash": "4bac7edba7a6b794397600a50fb7d8c5ed5ac28f952139115c71aab3fd6e9823"
   },
   "tools/convert-image.html": {
-    "lastmod": "2026-09-16",
-    "hash": "7e2e5e225284af807318d9a1d368c1c951d1c520026f3a1ae4d389f7d6904352"
+    "lastmod": "2026-09-23",
+    "hash": "ce3a24e9b82827a95bd2219c80bc1c550bef4245d85bde7957db8ec86b99d0a2"
   },
   "tools/image-watermark.html": {
-    "lastmod": "2026-09-16",
-    "hash": "fd91b178fc34cf2601516892121cc128e0dafad614b2f32308daf3a1ef4bf970"
+    "lastmod": "2026-09-23",
+    "hash": "65b08701ab007259e19bb142483cf50e1e4faf57bdab257b836cbc8ed863ac14"
   },
   "tools/qr-generator.html": {
     "lastmod": "2026-09-23",
-    "hash": "bc24f4cdce4ffd4ba9e6b4abd7aa42235370460da4da99f865d081390517d38c"
+    "hash": "9619e92559e383727b6196c943cbd9ae95ecac0e47cf050265db6576a9559e4b"
   },
   "tools/merge-pdf.html": {
-    "lastmod": "2026-09-15",
-    "hash": "9724e794711b9a14378877d88e48db7e484047768beb18131a3dc639078571ce"
+    "lastmod": "2026-09-23",
+    "hash": "85b7081d572d5625326f049a1d9c135ef630d29fc6759a07eeb9a8c43c342560"
   },
   "tools/split-pdf.html": {
-    "lastmod": "2026-09-15",
-    "hash": "727875d3af475e9623cddd15ee2f0e3b4e04a0d5bfdb8b4b52821fa1a3f5ccc4"
+    "lastmod": "2026-09-23",
+    "hash": "011fb13a1c91531f916725c491310b5123fb2d4afab67e2b80b622fdaf1d9f48"
   },
   "tools/pdf-to-image.html": {
-    "lastmod": "2026-09-15",
-    "hash": "5c1a3d58769558b887e1e5c16ecdb4a5902f41daa5688539ad4731b7a788e581"
+    "lastmod": "2026-09-23",
+    "hash": "25be567b282ebc1cc69b10859086aa02a105b0f5e8aa5d91086c5b725c5dd91c"
   },
   "tools/docx-to-pdf.html": {
     "lastmod": "2026-09-23",
-    "hash": "e3046f02f8e98252ad75e5c54d414ce19e906bc2675ea8ebf0d28cb8d57ff9bf"
+    "hash": "311ede6aafa32aa60dede284216478f70c7f104c910fd3da9a87f9c340be4a19"
   },
   "tools/pdf-to-docx.html": {
     "lastmod": "2026-09-23",
-    "hash": "587c9f1c7cb3301ac9eea62e77ffc7a7ef5e353a19f62ed9a7ce6868c6548520"
+    "hash": "6af5c2741d7b42b5ee319bc7d9a84efcf9de32fb3df8004ec4d07235c1d1e15e"
   },
   "tools/text-diff.html": {
-    "lastmod": "2026-09-16",
-    "hash": "4f703f3d1af4e1e651ea26ace597642632720b8bc5c53fa1bdacf6fa41050489"
+    "lastmod": "2026-09-23",
+    "hash": "3b19b30cf20b135681a1410cdc45f91cf7ce6273dc677fe716a5a5d2a8a1d7cd"
   },
   "tools/case-converter.html": {
-    "lastmod": "2026-09-15",
-    "hash": "8101ebceb06d84a638e3fa5dae80fcc20f57feec997dad387d7446cb5142d122"
+    "lastmod": "2026-09-23",
+    "hash": "0e9a1e3d29eaff023d4d3bc2cd032c34e8897bde5cdb3dda5d649ccf98449211"
   },
   "tools/text-statistics.html": {
-    "lastmod": "2026-09-15",
-    "hash": "cfa3d7c5b6f20ac8284c7678bc261153be4b7971cb470999eea2c07b7e2012a3"
+    "lastmod": "2026-09-23",
+    "hash": "caee3026971ba08717d7ae2b106f82170baa1a105d52054b3bed1db9d8208fd8"
   },
   "tools/json-to-typescript.html": {
     "lastmod": "2026-09-23",
-    "hash": "d4441ab92fe469afd815c30d839b0b58b7fb8c41422b13c50eadd7a99a435518"
+    "hash": "d465eb3414596c942bfb26e50e81f71ca90d021a6c25c9e4c5b132c1d24f3eb8"
   },
   "tools/json-formatter.html": {
-    "lastmod": "2026-09-15",
-    "hash": "241b6b9375d37b9a8ec46c9601e3951031e431ccec810021bfc5064962b43b8a"
+    "lastmod": "2026-09-23",
+    "hash": "32be7de61df90e8cbbd294b95aeeb6218f21ebabbffc69ad0b18b7444d9b0f1e"
   },
   "tools/base64-converter.html": {
-    "lastmod": "2026-09-15",
-    "hash": "4567f16aa3fe23a447f9261670b93ac08302b3dcee76d02788e245b7c9639f86"
+    "lastmod": "2026-09-23",
+    "hash": "6bdb00d45a9af05c4c8ce4fbb140318118f09573cffbca5365b6feed160cc98f"
   },
   "tools/hash-calculator.html": {
-    "lastmod": "2026-09-15",
-    "hash": "4c0eae29bbef15ef8e55452cd46a8baabcf2d74b8343c611db61f596b773a85f"
+    "lastmod": "2026-09-23",
+    "hash": "3a2d55bf4e3a8dc06817ed5f5d656fefc5f0fa9e4af34a50f8e39469bb9a0fa2"
   },
   "tools/password-generator.html": {
-    "lastmod": "2026-09-15",
-    "hash": "c4e4fb37a1b55b0d74df172e04c2977439c93b32e9dbc9b6d2a5713000764186"
+    "lastmod": "2026-09-23",
+    "hash": "2fa5172330dc642ff9b357867a26b77a94c738332b74222069933861ebd03347"
   },
   "tools/uuid-generator.html": {
-    "lastmod": "2026-09-15",
-    "hash": "ccbbdf75597330c474b2abf00234424898d72933ab02cda22d013d5dc3ffc6e3"
+    "lastmod": "2026-09-23",
+    "hash": "310448661394c29ec20cbe99b4583077b786820925855bccf9a26b4c9127ead9"
   },
   "tools/timestamp-converter.html": {
-    "lastmod": "2026-09-15",
-    "hash": "bd8f3c7a3e142901f3c432cf9d8dff2950393c390eca111ccdccef9d0f7f341a"
+    "lastmod": "2026-09-23",
+    "hash": "f55dbf9b7716a9babef2ece25a3ff89df8844070dd72d18e31e6ecadb40fbcc6"
   },
   "tools/color-converter.html": {
-    "lastmod": "2026-09-15",
-    "hash": "13193d055863d2ac817bfc056c3330bec507332412deb6287f8956a4e269eefd"
+    "lastmod": "2026-09-23",
+    "hash": "ccecc808f3496dce8515c18095e633764962c71271d3f41faf2f9499fb766c57"
   },
   "about.html": {
     "lastmod": "2026-09-23",
-    "hash": "17a9edd8e07975735a65abc9fbab1b3621a37ff5594dcf008b88c7502f8ff0b0"
+    "hash": "ecc434feccd7e4f1c644e10829bfe4514d427385a251b0ff34a31da91af25a94"
   },
   "donate.html": {
     "lastmod": "2026-09-23",
-    "hash": "73271aa4992bdad661cd8c0528eeacb1e4328b35946a91f7d60eeb9b05a8a6e4"
+    "hash": "1079b9bebb2e2a3118cc396e4d27177933d9cdcbb1fc36320bcec6b1642283fb"
   },
   "privacy.html": {
     "lastmod": "2026-09-23",
-    "hash": "d509d06c889f4fe707e54dcd8a70304fc9be7f08e8d8b2c1655c6b578dcd8c92"
+    "hash": "92a90ac1470719c9f9893536bf9eac759c98fd748eb3810f749406cd52a717bf"
   }
 }

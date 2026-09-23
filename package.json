@@ -18,6 +18,7 @@
     "test:checks": "node --test \"tests/node/**/*.test.mjs\"",
     "update:vendor": "node scripts/update-vendor.mjs",
     "gen:sitemap": "node scripts/gen-sitemap.mjs",
+    "gen:og-image": "node scripts/gen-og-image.mjs",
     "test": "playwright test",
     "test:headed": "playwright test --headed",
     "test:ui": "playwright test --ui",

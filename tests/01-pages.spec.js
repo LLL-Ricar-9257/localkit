@@ -279,4 +279,50 @@ test.describe('站点结构完整性', () => {
       for (const b of blocks) expect(() => JSON.parse(b), `${p} 的 JSON-LD 应为合法 JSON`).not.toThrow();
     }
   });
+
+  test('每页都有 og:url，且与本页地址一致（曾漏 23 个页面）', async ({ page }) => {
+    /* 这条曾经是个真实的漏洞：check-syntax 对缺失的载体直接跳过，
+     * 于是「23/24 个页面根本没有 og:url」在 CI 里完全看不见，
+     * 而 README 写着三处地址载体都必须写。这里从渲染后的 DOM 上再断言一次。 */
+    const ORIGIN = 'https://youngray.asia';
+    for (const p of indexablePages()) {
+      await page.goto('/' + p);
+      const ogUrl = await page.getAttribute('meta[property="og:url"]', 'content');
+      expect(ogUrl, `${p} 缺少 og:url`).toBeTruthy();
+
+      const expected = p === 'index.html' ? ORIGIN + '/' : ORIGIN + '/' + p.replace(/\.html$/, '');
+      expect(ogUrl, `${p} 的 og:url 与本页地址不一致`).toBe(expected);
+    }
+  });
+
+  test('每页的 og:image 与 apple-touch-icon 都能实际取到', async ({ page, request }) => {
+    // 静态检查只能证明文件在仓库里；这里证明它在服务端也能被取到——
+    // 分享预览图 404 不会有任何运行时报错，只有真的去分享一次才看得见。
+    for (const p of indexablePages()) {
+      await page.goto('/' + p);
+
+      const og = await page.getAttribute('meta[property="og:image"]', 'content');
+      expect(og, `${p} 缺少 og:image`).toBeTruthy();
+      expect(/^https:\/\//.test(og), `${p} 的 og:image 必须是绝对地址（社交抓取器不解析相对路径）`).toBe(true);
+      const ogRes = await request.get(new URL(og).pathname);
+      expect(ogRes.status(), `${p} 的 og:image 取不到: ${og}`).toBe(200);
+      expect(ogRes.headers()['content-type'], `${p} 的 og:image 类型不对`).toMatch(/image\//);
+
+      const icon = await page.getAttribute('link[rel="apple-touch-icon"]', 'href');
+      expect(icon, `${p} 缺少 apple-touch-icon`).toBeTruthy();
+      const iconPath = '/' + icon.replace(/^\.\.\//, '');
+      expect((await request.get(iconPath)).status(), `${p} 的 apple-touch-icon 取不到: ${iconPath}`).toBe(200);
+
+      await expect(page.locator('meta[name="twitter:card"]')).toHaveAttribute('content', 'summary_large_image');
+    }
+  });
+
+  test('错误页只带图标类元数据，不带 og:url / og:image', async ({ page }) => {
+    // 404 不该被分享或推广：它没有 canonical（检查会拦），也不该有分享预览图
+    await page.goto('/404.html');
+    expect(await page.locator('meta[property="og:url"]').count()).toBe(0);
+    expect(await page.locator('meta[property="og:image"]').count()).toBe(0);
+    expect(await page.locator('link[rel="apple-touch-icon"]').count()).toBe(1);
+    expect(await page.locator('meta[name="theme-color"]').count()).toBe(2);
+  });
 });

@@ -1,0 +1,37 @@
+# Dependabot 配置
+#
+# 为什么这个仓库需要它：
+#   npm 依赖只有 devDependencies（站点本身零运行时依赖），所以更新面很窄——
+#   但正因为窄，靠人记着去看就更容易忘。而 assets/vendor/ 那 9 个第三方库
+#   **不在** Dependabot 的管理范围内（它们不是 npm 包，是提交进仓库的构建产物），
+#   由 scripts/update-vendor.mjs 的 sha256 清单负责，需要手工升级。
+#   两套机制各管一段，不要混起来。
+#
+# 安全网：Dependabot 提 PR 后，CI 会跑 lint / check / test:checks / e2e。
+#   其中 check:vendor 会校验 assets/vendor 的哈希未被改动，
+#   因此依赖升级不可能悄悄把 vendor 一起换掉。
+
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      # 与仓库既有的提交信息风格一致（中文描述性 subject），这里用 scope 标明来源
+      prefix: "chore(deps)"
+    groups:
+      # 开发依赖合并成一个 PR：它们只服务于本地检查与 CI，单独提 PR 只是噪音。
+      # 注意 @playwright/test 用精确版本锁定（见 package.json），
+      # 分组更新不会改变这个策略，只是把版本号一起改掉。
+      dev-dependencies:
+        patterns: ['*']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: "chore(ci)"

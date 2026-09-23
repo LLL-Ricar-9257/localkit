@@ -412,6 +412,54 @@ test('update-vendor --check 能查出缺失的依赖文件', () => {
   assert.match(r.out, /文件缺失/, '应报文件缺失');
 });
 
+test('check-syntax 能查出页面缺少 og:url（曾经静默跳过）', () => {
+  /* 这条检查原先对「缺失的载体」直接 continue，于是「23 个页面根本没有 og:url」
+   * 在 CI 里完全看不见——而 README 明确写着三处地址载体都必须写。
+   * 检查对缺失沉默，等于把一致性交给运气。现在 canonical 与 og:url 都是必填。 */
+  const p = path.join(WORK, 'tools/hash-calculator.html');
+  assert.match(fs.readFileSync(p, 'utf8'), /property="og:url"/, '样本串必须存在，否则用例是空转的');
+
+  patch('tools/hash-calculator.html', s => s.replace(/\s*<meta property="og:url"[^>]*>/, ''));
+  const r = run('check-syntax.mjs');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /缺少 og:url/, '应报缺少 og:url');
+});
+
+test('check-syntax 能查出 og:image 指向不存在的文件', () => {
+  const p = path.join(WORK, 'tools/hash-calculator.html');
+  assert.match(fs.readFileSync(p, 'utf8'), /og-image\.jpg/, '样本串必须存在，否则用例是空转的');
+
+  patch('tools/hash-calculator.html', s => s.replace(
+    'https://youngray.asia/assets/og-image.jpg',
+    'https://youngray.asia/assets/og-image-does-not-exist.jpg'
+  ));
+  const r = run('check-syntax.mjs');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /og:image 指向的文件不存在/, '应报文件不存在');
+});
+
+test('check-syntax 能查出 og:image 用了相对地址', () => {
+  // 社交平台的抓取器不解析相对路径，必须写完整的 https:// 地址
+  const p = path.join(WORK, 'tools/hash-calculator.html');
+  assert.match(fs.readFileSync(p, 'utf8'), /https:\/\/youngray\.asia\/assets\/og-image\.jpg/,
+    '样本串必须存在，否则用例是空转的');
+
+  patch('tools/hash-calculator.html', s => s.replace(
+    'https://youngray.asia/assets/og-image.jpg',
+    '../assets/og-image.jpg'
+  ));
+  const r = run('check-syntax.mjs');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /不是本站的绝对地址/, '应报必须是绝对地址');
+});
+
+test('check-syntax 能查出缺少 twitter:card', () => {
+  patch('tools/hash-calculator.html', s => s.replace(/\s*<meta name="twitter:card"[^>]*>/, ''));
+  const r = run('check-syntax.mjs');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /缺少 twitter:card/, '应报缺少 twitter:card');
+});
+
 /* ================================================================== *
  * gen-sitemap.mjs
  * ================================================================== */
@@ -432,10 +480,15 @@ test('gen-sitemap --check 能查出「页面改过但没重新生成」', () => 
   /* 这是 lastmod 真正会漂移的方式：改了页面内容却忘了重新生成，
    * 于是搜索引擎拿到的修改日期停留在过去。断言必须覆盖这条路径，
    * 而不只是覆盖「文件被手改」。
-   * 注意这里改的是页面正文（不触碰 lastmod），生成器要靠内容哈希发现它。 */
+   * 注意这里改的是页面正文（不触碰 lastmod），生成器要靠内容哈希发现它。
+   *
+   * 先把副本的 sitemap 归零到一致状态，再注入缺陷——否则「其他页面也改过」这个变量
+   * 会混进来，差异行数一多，根因就被截断在展示上限之外了。 */
+  run('gen-sitemap.mjs', []);
+
   const p = path.join(WORK, 'tools/hash-calculator.html');
-  const before = fs.readFileSync(p, 'utf8');
-  fs.writeFileSync(p, before.replace('</body>', '<p>content changed</p>\n</body>'), 'utf8');
+  assert.match(fs.readFileSync(p, 'utf8'), /<\/body>/, '样本串必须存在，否则用例是空转的');
+  fs.writeFileSync(p, fs.readFileSync(p, 'utf8').replace('</body>', '<p>content changed</p>\n</body>'), 'utf8');
 
   const r = run('gen-sitemap.mjs', ['--check']);
   assert.equal(r.code, 1);

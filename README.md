@@ -4,7 +4,7 @@
 > 20 个纯浏览器端工具：图片压缩/转换/水印、PDF 合并/拆分/转图片/双向 Word 互转、二维码、JSON、文本对比、哈希、密码……
 > 所有处理 100% 在你的浏览器里完成——没有上传、没有账号、没有追踪、没有任何第三方请求。
 
-[在线使用 →](https://youngray.asia) · [GitHub →](https://github.com/LLL-Ricar-9257) · [赞助支持 ♥](donate.html)
+[在线使用 →](https://youngray.asia) · [GitHub →](https://github.com/LLL-Ricar-9257) · [English](README.en.md) · [赞助支持 ♥](donate.html)
 
 ## ✨ 特性
 
@@ -46,6 +46,7 @@ node scripts/serve.mjs 4173    # 仓库自带的零依赖服务器，会一并�
    （英文界面 `Respect Existing Headers`）。**这是最容易漏、后果最迷惑的一项**，
    理由见下方「为什么必须关掉 Browser Cache TTL」。
 4. 绑定自定义域名，把 `index.html`、`tools/*.html`、`sitemap.xml` 里的 `youngray.asia` 换成你的域名
+   （**别忘了 `og:image` 与 `twitter:image`**——社交平台的抓取器不解析相对路径，这两处必须是完整地址）
 5. 建议同时添加 `www` 子域并在 Rules → Redirect Rules 里做 `www` → 根域 301
 6. 确认 **Web Analytics 处于关闭状态**（它会注入 `beacon.min.js`，与「零第三方脚本」冲突）
 7. 赞助渠道在 `assets/config.js` 配置（GitHub 默认；爱发电可选）
@@ -81,16 +82,33 @@ Cloudflare Pages 会把 `/foo.html` **308 永久重定向**到 `/foo`。这**不
 
 因此以下三处**都必须写无扩展名形式**，且必须一致：
 
-| 载体 | 位置 | 示例 |
-|---|---|---|
-| `canonical` | 各页 `<head>` | `https://youngray.asia/privacy` |
-| `og:url` | 各页 `<head>` | `https://youngray.asia/privacy` |
-| `url` | 各页 JSON-LD | `https://youngray.asia/tools/hash-calculator` |
-| `<loc>` | `sitemap.xml` | `https://youngray.asia/privacy` |
+| 载体 | 位置 | 示例 | 是否必填 |
+|---|---|---|---|
+| `canonical` | 各页 `<head>` | `https://youngray.asia/privacy` | 必填（错误页除外） |
+| `og:url` | 各页 `<head>` | `https://youngray.asia/privacy` | 必填（错误页除外） |
+| `url` | 各页 JSON-LD | `https://youngray.asia/tools/hash-calculator` | 视结构化数据而定 |
+| `<loc>` | `sitemap.xml` | `https://youngray.asia/privacy` | 由生成器保证 |
 
-`npm run check:syntax` 会核对全部 46 处载体：地址必须是本站的、必须等于该页自身的最终地址、
+### 社交分享预览图
+
+24 个页面都带 `og:image` / `og:image:width` / `og:image:height` / `twitter:card`，
+指向 `assets/og-image.jpg`（1200×630，77 KB）。`apple-touch-icon` 与 `theme-color`（区分明暗）同样全站下发。
+
+- 图片由 `npm run gen:og-image` 生成：用 Playwright 渲染一段与站点同源的 HTML 再截图，
+  因此配色与站点一致，也不需要引入任何图形库。产物**提交进仓库**，只在需要更新时重跑。
+- `og:image` 必须写**绝对地址**——社交平台的抓取器不解析相对路径；指向的文件必须存在。
+  这两点 `check:syntax` 都会校验，端到端测试还会真的去请求一次：预览图 404 不会有任何运行时报错，
+  只有真的分享一次才看得见，属于最难自查的一类问题。
+- `404.html` 刻意不带 `og:*`：错误页不该被分享或推广。
+
+`npm run check:syntax` 会核对全部 69 处载体：地址必须是本站的、必须等于该页自身的最终地址、
 且不得带 `.html`。漏改任何一处都会被 CI 拦下——**这条检查是被漏改教育出来的**：
 第一次迁移只改了 `canonical` 与 sitemap，漏掉了 `og:url` 与 JSON-LD，所以现在三者一起校验。
+
+**而且「缺失」本身也是错误。** 这是后来才补上的：原先检查对不存在的载体直接跳过，
+于是「24 个页面里有 23 个根本没有 `og:url`」这件事在 CI 里完全看不见，
+尽管本文档的表格写着四处都必须写。检查对缺失沉默，等于把一致性交给运气——
+现在 `canonical` 与 `og:url` 是必填项，`check:syntax` 与端到端测试各有一条断言守着。
 
 本地开发服务器（`scripts/serve.mjs`）会复现平台的这三条行为，保证本地与线上一致：
 `.html` → 308、`/index.html` → `/`、无扩展名 → 解析到同名 `.html` 文件。
@@ -136,6 +154,7 @@ npm run smoke        # 探测线上：缓存策略、零第三方脚本、安全
 npm test             # Playwright 端到端测试（会自动起本地服务器）
 npm run serve        # 仅启动本地预览服务器
 npm run gen:sitemap  # 改了页面后重新生成 sitemap.xml（含 lastmod）
+npm run gen:og-image # 重新生成社交预览图与主屏图标（用 Playwright 截图，需要浏览器）
 ```
 
 `npm run smoke` 是唯一会访问线上环境的检查，因此**不在**默认的 `check` 里。
@@ -154,6 +173,7 @@ CI 里用的是 `npm run smoke -- --wait 180`。因为该 job 在 push 后几秒
 - `check:i18n` —— 校验中英字典键是否对齐、页面引用的键是否存在、**静态兜底文案是否与字典英文一致**、
   是否存在无人引用的死键。页面静态源码与运行时字典是同一句文案的两份拷贝，这是防止二者漂移的门禁。
 - `check:syntax` —— 校验所有 JS 与内联脚本的语法、JSON-LD 是否为合法 JSON、页面引用的本地资源是否存在、
+  **canonical / og:url / og:image / twitter:card 是否齐全且自洽**、
   按需加载（`LK.loadScript`）的 vendor 路径是否存在、以及是否残留任何指向第三方 CDN 的引用。
 - `check:deploy` —— 校验 `_headers` 是否重复设置同名响应头（Cloudflare 会把它们逗号合并，
   产出互相冲突的指令）、`_redirects` 是否使用了不受支持的状态码、

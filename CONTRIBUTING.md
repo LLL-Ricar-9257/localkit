@@ -61,6 +61,28 @@ CI 会跑同样的命令，任何一项失败都不会合并。这些检查各�
 
 别忘了用 `node scripts/check-syntax.mjs` 顺便验证资源路径。
 
+### 新页面的 `<head>` 必须抄齐这些标签
+
+复制现有工具页时，`<head>` 里这一段是**必须整套照抄并改地址**的（`check:syntax` 会逐条校验）：
+
+```html
+  <link rel="canonical" href="https://youngray.asia/tools/你的工具">   <!-- 无扩展名 -->
+  <meta property="og:url" content="https://youngray.asia/tools/你的工具">
+  <meta property="og:image" content="https://youngray.asia/assets/og-image.jpg">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="theme-color" content="#f8f9fb" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#0e1116" media="(prefers-color-scheme: dark)">
+  <link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+```
+
+两条容易踩的坑：
+
+- `canonical` 与 `og:url` 是**必填**，且必须写无扩展名的最终地址。缺失会被 CI 拦下。
+- `og:image` 必须是**绝对地址**——社交平台的抓取器不解析相对路径。写错不会有任何运行时报错，
+  只是分享出去没有预览图，因此检查专门盯着它。
+
 ### 重依赖要按需加载，不要写在 `<script src>` 里
 
 首屏体积是这个站点的核心指标之一（见 README 的「为什么零第三方请求」）。

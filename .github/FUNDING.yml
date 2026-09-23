@@ -1,0 +1,8 @@
+# GitHub 仓库页面的 Sponsor 按钮。
+#
+# 刻意指向站点自己的赞助页，而不是绑定 GitHub Sponsors：
+# 赞助渠道（GitHub / 爱发电）统一在 assets/config.js 与 donate.html 里配置，
+# 这里只作为入口。否则渠道清单一分二，改一处忘一处是必然的。
+#
+# custom 必须是绝对地址（GitHub 不解析相对路径），且最多 4 条。
+custom: ["https://youngray.asia/donate"]
