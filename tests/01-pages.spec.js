@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
-import { allPages, indexablePages, NON_INDEXABLE } from './helpers.js';
+import {
+  allPages, indexablePages, NON_INDEXABLE,
+  recordRequests, callHookWithFile, setLang, expectKeyTriggersFilePicker,
+} from './helpers.js';
 
 const pages = allPages();
 
@@ -105,6 +108,112 @@ test.describe('部署边界', () => {
     expect(ages.length, `HSTS 出现多个 max-age（被逗号合并？）: ${hsts}`).toBe(1);
     const maxAge = Number((hsts.match(/max-age=(\d+)/) || [])[1]);
     expect(Number.isInteger(maxAge) && maxAge >= 86400, `max-age 过小或非法: ${hsts}`).toBe(true);
+  });
+});
+
+test.describe('重依赖按需加载', () => {
+  /* 首屏体积的直接约束：这些库只在用户真正用到时才该被下载。
+   *
+   * 断言落在「有没有发起请求」上，而不是「有没有 <script src> 标签」——
+   * 后者可以用 defer、type=module 或动态注入绕过，前者才是用户实际付出的流量。
+   * 这些库此前在解析 HTML 时就无条件下载，占相应页面首屏 gzip 体积的 80% 以上。 */
+  const HEAVY = [
+    ['/tools/pdf-to-docx.html', [
+      '/assets/vendor/pdfjs/pdf.min.js',
+      '/assets/vendor/pdfjs/pdf.worker.min.js',
+      '/assets/vendor/docx.umd.js',
+    ]],
+    ['/tools/docx-to-pdf.html', [
+      '/assets/vendor/jszip.min.js',
+      '/assets/vendor/docx-preview.min.js',
+      '/assets/vendor/jspdf.umd.min.js',
+      '/assets/vendor/html2canvas.min.js',
+    ]],
+  ];
+
+  for (const [pagePath, libs] of HEAVY) {
+    test(`${pagePath} 首屏不下载重依赖`, async ({ page }) => {
+      const rec = recordRequests(page);
+      await page.goto(pagePath, { waitUntil: 'load' });
+      // 留一点时间窗口，让任何延迟触发的加载暴露出来
+      await page.waitForTimeout(400);
+
+      for (const lib of libs) {
+        const hit = rec.requests.find(r => r.url.endsWith(lib));
+        expect(hit, `${lib} 不应在首屏被下载`).toBeUndefined();
+      }
+    });
+  }
+
+  test('PDF 转 Word：转换时才加载 pdf.js 与 docx', async ({ page }) => {
+    const rec = recordRequests(page);
+    await page.goto('/tools/pdf-to-docx.html', { waitUntil: 'load' });
+
+    const before = rec.requests.length;
+    await callHookWithFile(page, '__lkConvert', 'sample.pdf', 'application/pdf');
+
+    const after = rec.requests.slice(before).map(r => r.url);
+    expect(after.some(u => u.endsWith('/assets/vendor/pdfjs/pdf.min.js')), '应加载 pdf.js').toBe(true);
+    expect(after.some(u => u.endsWith('/assets/vendor/docx.umd.js')), '应加载 docx').toBe(true);
+  });
+
+  test('DOCX 转 PDF：转换时才加载四个依赖', async ({ page }) => {
+    const rec = recordRequests(page);
+    await page.goto('/tools/docx-to-pdf.html', { waitUntil: 'load' });
+
+    const before = rec.requests.length;
+    await callHookWithFile(page, '__lkProcess', 'sample.docx',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+    const after = rec.requests.slice(before).map(r => r.url);
+    for (const lib of ['jszip.min.js', 'docx-preview.min.js', 'jspdf.umd.min.js', 'html2canvas.min.js']) {
+      expect(after.some(u => u.endsWith('/assets/vendor/' + lib)), `应加载 ${lib}`).toBe(true);
+    }
+  });
+
+  test('按需加载不会产生任何对外请求（隐私承诺不受影响）', async ({ page }) => {
+    const rec = recordRequests(page);
+    await page.goto('/tools/docx-to-pdf.html', { waitUntil: 'load' });
+    await callHookWithFile(page, '__lkProcess', 'sample.docx',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    expect(rec.external().map(r => r.url)).toEqual([]);
+  });
+});
+
+test.describe('键盘可达性', () => {
+  /* 拖拽区原本只是一个带 click 监听的 <div>，而真正的 <input type="file"> 带着
+   * hidden 属性——纯键盘用户没有任何办法触发文件选择。修复放在 LK.setupDropzone 里，
+   * 一处覆盖全部工具页，这里从行为上验证它确实生效。 */
+  const SAMPLE = ['/tools/compress-image.html', '/tools/merge-pdf.html'];
+
+  for (const p of SAMPLE) {
+    test(`${p} 拖拽区具备按钮语义且可被 Tab 聚焦`, async ({ page }) => {
+      await page.goto(p);
+      const zone = page.locator('#dropzone');
+      await expect(zone).toHaveAttribute('role', 'button');
+      await expect(zone).toHaveAttribute('tabindex', '0');
+      await expect(zone).toHaveAttribute('aria-label', /\S/);
+    });
+  }
+
+  /* 这两条曾经用 page.waitForEvent('filechooser') 断言，而且失败是偶发的：
+   * Space 在 --repeat-each=20 下挂了 5 次（Enter 20/20 通过，同一条代码路径）。
+   * 失败时原生对话框已经打开，会把渲染进程和 worker 一起卡死——一次 90 秒超时拖成整份套件
+   * 一小时不返回。断言对象因此改为「真实文件输入框的 click 事件」，理由详见 helpers.js。
+   * 产品侧的契约没有变：Enter 与 Space 都必须把 click 打到那个隐藏 input 上。 */
+  test('按 Enter 会驱动文件输入框', async ({ page }) => {
+    await expectKeyTriggersFilePicker(page, 'Enter');
+  });
+
+  test('按 Space 同样会驱动文件输入框', async ({ page }) => {
+    await expectKeyTriggersFilePicker(page, 'Space');
+  });
+
+  test('aria-label 跟随语言切换（不能只留静态英文兜底）', async ({ page }) => {
+    await setLang(page, 'zh');
+    await page.goto('/tools/compress-image.html');
+    const label = await page.locator('#dropzone').getAttribute('aria-label');
+    expect(label, '中文界面下 aria-label 应已被翻译').toMatch(/[\u4e00-\u9fa5]/);
   });
 });
 

@@ -86,6 +86,45 @@ export async function setLang(page, lang) {
 }
 
 /**
+ * 断言在拖拽区上按下某个键会驱动文件输入框。
+ *
+ * 为什么不用 page.waitForEvent('filechooser')：
+ * 那要求 Playwright 与浏览器原生对话框的拦截时序刚好对上，实测是一次真实的偶发——
+ * `--repeat-each=20` 下 Space 有 5 次拿不到事件，而 Enter 20 次全过，两者走的是同一条代码路径。
+ * 更糟的是失败代价：事件没拿到时原生对话框已经在浏览器里打开了，它会卡住渲染进程，
+ * worker 停止后 5 分钟仍无法退出（实测），于是整份套件被一条用例拖死。
+ *
+ * 所以这里把断言换到**真实 <input type="file"> 的 click 事件**上：
+ * keydown → 处理器 → input.click() → click 事件，整条链路都还在，
+ * 只把「操作系统对话框」这一步用 preventDefault 挡在门外。断言因此是确定的，
+ * 且不再依赖任何操作系统层面的行为。
+ *
+ * 同时保留一个 filechooser 兜底监听：万一某个平台上 preventDefault 不足以拦住对话框，
+ * 也让 Playwright 把它吞掉，不至于弹出原生模态卡死浏览器。
+ */
+export async function expectKeyTriggersFilePicker(page, key) {
+  let dialogsRequested = 0;
+  page.on('filechooser', () => { dialogsRequested++; });
+
+  await page.goto('/tools/compress-image.html');
+  await page.evaluate(() => {
+    window.__fileInputClicks = 0;
+    document.getElementById('fileInput').addEventListener('click', (e) => {
+      e.preventDefault();   // 阻止弹出原生对话框，但不影响本次断言要观测的 click 事件
+      window.__fileInputClicks++;
+    });
+  });
+
+  const zone = page.locator('#dropzone');
+  await zone.focus();
+  await page.keyboard.press(key);
+
+  await expect.poll(() => page.evaluate(() => window.__fileInputClicks),
+    { message: `按 ${key} 应把 click 打到隐藏的文件输入框上` }).toBe(1);
+  expect(dialogsRequested, 'preventDefault 应已拦下原生对话框').toBe(0);
+}
+
+/**
  * 取页面上真正可见的文本。
  *
  * 必须先把所有 <details> 展开：innerText 会跳过折叠元素的内容，

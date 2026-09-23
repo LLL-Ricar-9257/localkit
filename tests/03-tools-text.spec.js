@@ -357,6 +357,47 @@ test.describe('JSON 转 TypeScript', () => {
     expect(await page.inputValue('#output')).toBe('');
     await expect(page.locator('.status')).not.toHaveText('');
   });
+
+  /* 以下是逻辑层断言，用 __lkConvert 钩子绕过 UI。上面两条保留 UI 路径的覆盖
+   * （按钮接线、输出框、错误提示），两者互补而不是互相替代。 */
+
+  test('数组内同形元素只生成一个接口，且被引用为 Item[]', async ({ page }) => {
+    await page.goto('/tools/json-to-typescript.html');
+    const out = await page.evaluate(() =>
+      window.__lkConvert('{"items":[{"a":1},{"a":2},{"a":3}]}', 'Root'));
+
+    expect(out).toContain('items: Item[];');
+    expect(out, '同形元素不应各生成一个接口').not.toContain('Item2');
+    expect((out.match(/export interface /g) || []).length, '只应有两个接口').toBe(2);
+  });
+
+  test('根接口排在最前，子接口在后（顺序是约定的，不是巧合）', async ({ page }) => {
+    await page.goto('/tools/json-to-typescript.html');
+    const out = await page.evaluate(() =>
+      window.__lkConvert('{"user":{"profile":{"nick":"a"}}}', 'Root'));
+
+    const rootAt = out.indexOf('export interface Root');
+    expect(rootAt).toBe(0);
+    expect(out.indexOf('export interface Profile')).toBeGreaterThan(rootAt);
+  });
+
+  test('非标识符键名被加引号，而不是产出非法 TS', async ({ page }) => {
+    await page.goto('/tools/json-to-typescript.html');
+    const out = await page.evaluate(() =>
+      window.__lkConvert('{"my-key":1,"2bad":true}', 'Root'));
+
+    expect(out).toContain('"my-key": number;');
+    expect(out).toContain('"2bad": boolean;');
+  });
+
+  test('非法 JSON 在钩子里同样抛错（错误路径可被断言）', async ({ page }) => {
+    await page.goto('/tools/json-to-typescript.html');
+    const msg = await page.evaluate(() => {
+      try { window.__lkConvert('{{{', 'Root'); return null; }
+      catch (e) { return e.message; }
+    });
+    expect(msg).not.toBeNull();
+  });
 });
 
 test.describe('二维码生成', () => {
@@ -366,5 +407,80 @@ test.describe('二维码生成', () => {
     await expect(page.locator('#preview svg')).toBeVisible();
     await expect(page.locator('#dlPng')).toBeEnabled();
     await expect(page.locator('#dlSvg')).toBeEnabled();
+  });
+
+  test('网址内容原样进入 payload，且产出真实模块矩阵', async ({ page }) => {
+    await page.goto('/tools/qr-generator.html');
+    const r = await page.evaluate(() =>
+      window.__lkRender({ type: 'url', content: 'https://localkit.example/check' }));
+
+    expect(r.ok).toBe(true);
+    expect(r.payload).toBe('https://localkit.example/check');
+    expect(r.modules).toBeGreaterThan(0);
+    expect(r.hasSvg).toBe(true);
+    expect(r.pngReady && r.svgReady).toBe(true);
+  });
+
+  test('Wi-Fi payload 按规范拼装，并对保留字符做反斜杠转义', async ({ page }) => {
+    await page.goto('/tools/qr-generator.html');
+    const r = await page.evaluate(() => window.__lkRender({
+      type: 'wifi', wifiSsid: 'MyNet', wifiSec: 'WPA', wifiPass: 'p@ss;word',
+    }));
+
+    // 分号是 WIFI: 格式的分隔符，出现在密码里必须转义，否则整个 payload 会被解析错位
+    expect(r.payload).toBe('WIFI:T:WPA;S:MyNet;P:p@ss\\;word;;');
+    expect(r.ok).toBe(true);
+  });
+
+  test('开放网络不输出 P: 段', async ({ page }) => {
+    await page.goto('/tools/qr-generator.html');
+    const r = await page.evaluate(() =>
+      window.__lkRender({ type: 'wifi', wifiSsid: 'Cafe', wifiSec: 'nopass' }));
+
+    expect(r.payload).toBe('WIFI:T:nopass;S:Cafe;;');
+  });
+
+  test('空输入不产出 SVG，也不启用导出按钮', async ({ page }) => {
+    await page.goto('/tools/qr-generator.html');
+    const r = await page.evaluate(() => window.__lkRender({ type: 'url', content: '   ' }));
+
+    expect(r.ok).toBe(false);
+    expect(r.hasSvg).toBe(false);
+    expect(r.pngReady).toBe(false);
+    expect(r.svgReady).toBe(false);
+  });
+
+  test('清空输入后不残留上一次的二维码（回归）', async ({ page }) => {
+    /* 输入框默认值是 https://example.com，页面加载即渲染出一个成功的二维码。
+     * 此前清空输入后 catch 分支只改状态文字，产物与按钮状态都留着——
+     * 用户会看到一个「报错了、但仍有二维码」的界面，并下载到与当前输入无关的文件。
+     * 这里断言的是「报错必须同时清掉产物」，而不是只断言状态文字变了。 */
+    await page.goto('/tools/qr-generator.html');
+    await expect(page.locator('#preview svg'), '默认值应能渲染成功').toBeVisible();
+
+    const r = await page.evaluate(() => window.__lkRender({ type: 'url', content: '' }));
+    expect(r.ok).toBe(false);
+    expect(await page.locator('#preview svg').count(), '旧二维码必须被清掉').toBe(0);
+    await expect(page.locator('#dlPng')).toBeDisabled();
+    await expect(page.locator('#dlSvg')).toBeDisabled();
+  });
+
+  test('切换到 Wi-Fi 模式但缺 SSID 时，同样不残留 URL 模式的二维码（回归）', async ({ page }) => {
+    await page.goto('/tools/qr-generator.html');
+    await expect(page.locator('#preview svg')).toBeVisible();
+
+    const r = await page.evaluate(() =>
+      window.__lkRender({ type: 'wifi', wifiSsid: '', wifiPass: 'x' }));
+    expect(r.ok).toBe(false);
+    expect(await page.locator('#preview svg').count()).toBe(0);
+  });
+
+  test('Wi-Fi 模式缺 SSID 时报错而不是产出空二维码', async ({ page }) => {
+    await page.goto('/tools/qr-generator.html');
+    const r = await page.evaluate(() =>
+      window.__lkRender({ type: 'wifi', wifiSsid: '' }));
+
+    expect(r.ok).toBe(false);
+    expect(r.modules).toBe(0);
   });
 });

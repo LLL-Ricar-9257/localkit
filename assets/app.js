@@ -14,8 +14,50 @@
    */
   const MAX_CANVAS_SIDE = 16384;
 
+  /* 按需加载的本地脚本缓存：同一个 src 只会真正插入一次，
+   * 后续调用复用同一个 Promise（并发调用也不会插入两个 <script>）。 */
+  const scriptLoads = new Map();
+
+  /* 已注册的拖拽区，用于在语言切换后刷新 aria-label。 */
+  const dropzones = [];
+
+  function refreshDropzoneLabels() {
+    for (const zone of dropzones) {
+      const label = zone.querySelector('.title');
+      if (label) zone.setAttribute('aria-label', label.textContent.trim());
+    }
+  }
+
   window.LK = {
     el(id) { return document.getElementById(id); },
+
+    /**
+     * 按需加载一个本地脚本（相对当前页面），返回 Promise。
+     *
+     * 存在的理由是首屏体积：重依赖（pdf.js 105 KB gzip、docx 135 KB gzip、
+     * jsPDF + html2canvas 158 KB gzip）对绝大多数只「看一眼这个工具长什么样」的
+     * 访问者毫无用处，却在解析 HTML 时就无条件下载。改成首次真正需要时再注入。
+     *
+     * CSP 是 `script-src 'self' 'unsafe-inline'`，动态注入的同源脚本被允许，
+     * 因此这条路径不需要放宽任何策略。路径必须是相对路径（本站零外发承诺）。
+     */
+    loadScript(src) {
+      let p = scriptLoads.get(src);
+      if (p) return p;
+      p = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = src;
+        s.onload = () => resolve();
+        s.onerror = () => {
+          // 失败时把缓存清掉，否则一次网络抖动会让该页永久无法重试
+          scriptLoads.delete(src);
+          reject(new Error('脚本加载失败: ' + src));
+        };
+        document.head.appendChild(s);
+      });
+      scriptLoads.set(src, p);
+      return p;
+    },
 
     /** 转义为 HTML 文本。用于所有要拼进 innerHTML 的动态值。 */
     esc(value) {
@@ -35,11 +77,28 @@
     },
 
     /**
-     * Wire a dropzone element: click -> hidden file input, drag & drop.
+     * Wire a dropzone element: click -> hidden file input, drag & drop, keyboard.
      * cb(files) receives a FileList-like array.
+     *
+     * 键盘可达性在这里补齐，而不是要求每个工具页自己写：拖拽区原本只是一个带
+     * click 监听的 <div>，而真正的 <input type="file"> 带着 hidden 属性——
+     * 于是纯键盘用户没有任何办法触发文件选择。role/tabindex/Enter/Space 一并就地设置，
+     * 一处覆盖全部工具页，也避免各页写法漂移。
      */
     setupDropzone(zone, input, cb) {
+      if (!zone.hasAttribute('tabindex')) zone.setAttribute('tabindex', '0');
+      if (!zone.getAttribute('role')) zone.setAttribute('role', 'button');
+      if (dropzones.indexOf(zone) === -1) dropzones.push(zone);
+      refreshDropzoneLabels();
+
       zone.addEventListener('click', () => input.click());
+      zone.addEventListener('keydown', (e) => {
+        // Space 的 e.key 在现代浏览器里就是 ' '；'Spacebar' 是旧 Edge/IE 的写法
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Spacebar') {
+          e.preventDefault();   // 阻止 Space 把页面往下滚
+          input.click();
+        }
+      });
       zone.addEventListener('dragover', (e) => { e.preventDefault(); zone.classList.add('drag'); });
       zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
       zone.addEventListener('drop', (e) => {
@@ -120,6 +179,12 @@
       }
     },
   };
+
+  /* 语言切换后 aria-label 必须跟着变。
+   * 拖拽区的 aria-label 取自 .title 的当前文本，而 setupDropzone 是在页面解析时
+   * 调用的——那一刻 i18n 还没落地，读到的是静态英文兜底。注册到 onApply 之后，
+   * 中文用户切到中文时读屏器念的也是中文。 */
+  if (window.LKI) window.LKI.onApply.push(refreshDropzoneLabels);
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {

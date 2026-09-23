@@ -29,7 +29,10 @@ const VOLATILE = [
   'index.html',
   '404.html',
   'sitemap.xml',
+  'scripts/sitemap-lastmod.json',
   'tools/hash-calculator.html',
+  'tools/pdf-to-docx.html',
+  'tests/01-pages.spec.js',
   '_headers',
   '_redirects',
   'assets/vendor/md5.min.js',
@@ -97,12 +100,13 @@ afterEach(() => VOLATILE.forEach(copyFileFresh));
  * 如果这一条失败，说明基线本身有问题，后面所有「注入缺陷后失败」的结论都不可信。
  * ================================================================== */
 
-test('基线：干净副本上四个校验脚本全部通过', () => {
+test('基线：干净副本上五个校验脚本全部通过', () => {
   for (const [script, args] of [
     ['check-i18n.mjs', []],
     ['check-syntax.mjs', []],
     ['check-deploy.mjs', []],
     ['update-vendor.mjs', ['--check']],
+    ['gen-sitemap.mjs', ['--check']],
   ]) {
     const r = run(script, args);
     assert.equal(r.code, 0, `${script} 在干净副本上应通过，实际退出码 ${r.code}\n${r.out}`);
@@ -203,6 +207,41 @@ test('check-syntax 能查出非法的 JSON-LD', () => {
   const r = run('check-syntax.mjs');
   assert.equal(r.code, 1);
   assert.match(r.out, /\[JSON-LD\]/, '应报 JSON-LD 解析失败');
+});
+
+test('check-syntax 能查出按需加载的 vendor 路径写错', () => {
+  /* 重依赖改为 LK.loadScript() 运行时注入后，这些路径不再是 HTML 的 src= 属性，
+   * 第 3 项「资源引用完整性」扫不到它们。这里注入一个写错的路径，
+   * 断言第 7 项确实会拦下——否则路径写错只会在用户点「转换」那一刻变成 404。 */
+  const p = path.join(WORK, 'tools/pdf-to-docx.html');
+  assert.match(fs.readFileSync(p, 'utf8'), /docx\.umd\.js/, '样本串必须存在，否则用例是空转的');
+
+  patch('tools/pdf-to-docx.html', s => s.replace(
+    '../assets/vendor/docx.umd.js',
+    '../assets/vendor/docx-does-not-exist.umd.js'
+  ));
+  const r = run('check-syntax.mjs');
+  assert.equal(r.code, 1);
+  assert.match(r.out, /\[按需加载\]/, '应报按需加载路径缺失');
+  assert.match(r.out, /docx-does-not-exist/, '应指出具体路径');
+});
+
+test('check-syntax 不把 tests/ 里的 vendor 期望 URL 当成加载路径', () => {
+  /* 第 7 项的扫描范围刻意只覆盖「浏览器会执行的代码」。tests/ 里的
+   * '/assets/vendor/jszip.min.js' 是断言用的期望 URL，不是运行时加载路径。
+   * 这里故意在测试文件里写一个不存在的 vendor 路径，断言它不会触发报错——
+   * 以此把扫描范围锁住。（第一版没区分这三类，直接报了 12 个假错误。） */
+  const p = path.join(WORK, 'tests/01-pages.spec.js');
+  assert.match(fs.readFileSync(p, 'utf8'), /'\/assets\/vendor\/jszip\.min\.js'/,
+    '样本串必须存在，否则用例是空转的');
+
+  patch('tests/01-pages.spec.js', s => s.replace(
+    "'/assets/vendor/jszip.min.js'",
+    "'/assets/vendor/not-a-real-file.js'"
+  ));
+  const r = run('check-syntax.mjs');
+  assert.equal(r.code, 0, 'tests/ 不应被按需加载检查覆盖');
+  assert.doesNotMatch(r.out, /\[按需加载\]/);
 });
 
 /* ================================================================== *
@@ -318,8 +357,15 @@ test('check-syntax 能查出 JSON-LD 的 url 带了 .html', () => {
 });
 
 test('check-syntax 能查出 sitemap 漏收页面', () => {
+  /* 这里必须先断言样本串存在：本用例原先按 <changefreq>/<priority> 的旧格式写死，
+   * 而 sitemap 改成 <lastmod> 之后模式匹配不上，patch 静默变成空操作——
+   * 用例于是「通过」，实际上什么都没验证。这类静默失效比失败更危险。 */
+  const p = path.join(WORK, 'sitemap.xml');
+  assert.match(fs.readFileSync(p, 'utf8'), /<loc>https:\/\/youngray\.asia\/about<\/loc>/,
+    '样本串必须存在，否则用例是空转的');
+
   patch('sitemap.xml', s => s.replace(
-    '  <url><loc>https://youngray.asia/about</loc><changefreq>yearly</changefreq><priority>0.4</priority></url>\n',
+    /\s*<url><loc>https:\/\/youngray\.asia\/about<\/loc><lastmod>[\d-]+<\/lastmod><\/url>/,
     ''
   ));
   const r = run('check-syntax.mjs');
@@ -364,4 +410,56 @@ test('update-vendor --check 能查出缺失的依赖文件', () => {
   const r = run('update-vendor.mjs', ['--check']);
   assert.equal(r.code, 1);
   assert.match(r.out, /文件缺失/, '应报文件缺失');
+});
+
+/* ================================================================== *
+ * gen-sitemap.mjs
+ * ================================================================== */
+
+test('gen-sitemap --check 能查出 sitemap 与生成结果不一致', () => {
+  // 手工把某条 lastmod 改掉——模拟「有人手改 sitemap 而没有重新生成」
+  const p = path.join(WORK, 'sitemap.xml');
+  assert.match(fs.readFileSync(p, 'utf8'), /<lastmod>/, '样本必须含 lastmod，否则用例是空转的');
+
+  patch('sitemap.xml', s => s.replace(/<lastmod>[\d-]+<\/lastmod>/, '<lastmod>2000-01-01</lastmod>'));
+  const r = run('gen-sitemap.mjs', ['--check']);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /不一致/, '应报不一致');
+  assert.match(r.out, /gen-sitemap\.mjs/, '应指出修复命令');
+});
+
+test('gen-sitemap --check 能查出「页面改过但没重新生成」', () => {
+  /* 这是 lastmod 真正会漂移的方式：改了页面内容却忘了重新生成，
+   * 于是搜索引擎拿到的修改日期停留在过去。断言必须覆盖这条路径，
+   * 而不只是覆盖「文件被手改」。
+   * 注意这里改的是页面正文（不触碰 lastmod），生成器要靠内容哈希发现它。 */
+  const p = path.join(WORK, 'tools/hash-calculator.html');
+  const before = fs.readFileSync(p, 'utf8');
+  fs.writeFileSync(p, before.replace('</body>', '<p>content changed</p>\n</body>'), 'utf8');
+
+  const r = run('gen-sitemap.mjs', ['--check']);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /sitemap-lastmod\.json/, '应指出日期清单与页面内容不一致');
+});
+
+test('gen-sitemap --check 能查出 sitemap 漏收页面', () => {
+  // 生成器按目录实际内容推导清单，删掉一条 <url> 必须被发现
+  patch('sitemap.xml', s => s.replace(/\s*<url><loc>[^<]*<\/loc><lastmod>[\d-]+<\/lastmod><\/url>/, ''));
+  const r = run('gen-sitemap.mjs', ['--check']);
+  assert.equal(r.code, 1);
+  assert.match(r.out, /不一致/, '应报不一致');
+});
+
+test('gen-sitemap 生成结果是幂等的（连续两次不产生差异）', () => {
+  // 幂等性是这个生成器能被 --check 校验的前提：如果第二次运行会产出不同内容，
+  // --check 就会永远失败。（第一版把瞬态的 changed 标记写进了清单，正是这个毛病。）
+  run('gen-sitemap.mjs', []);
+  const first = fs.readFileSync(path.join(WORK, 'sitemap.xml'), 'utf8');
+  const firstManifest = fs.readFileSync(path.join(WORK, 'scripts/sitemap-lastmod.json'), 'utf8');
+
+  run('gen-sitemap.mjs', []);
+  assert.equal(fs.readFileSync(path.join(WORK, 'sitemap.xml'), 'utf8'), first,
+    '第二次生成不应改动 sitemap.xml');
+  assert.equal(fs.readFileSync(path.join(WORK, 'scripts/sitemap-lastmod.json'), 'utf8'), firstManifest,
+    '第二次生成不应改动日期清单');
 });

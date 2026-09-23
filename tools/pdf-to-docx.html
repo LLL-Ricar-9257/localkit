@@ -116,15 +116,27 @@
   </footer>
 
   <script src="../assets/app.js"></script>
-  <script src="../assets/vendor/pdfjs/pdf.min.js"></script>
-  <script src="../assets/vendor/docx.umd.js"></script>
   <script>
   (function () {
     'use strict';
-    const { el, setupDropzone, formatBytes, downloadBlob, setStatus } = window.LK;
+    const { el, setupDropzone, formatBytes, downloadBlob, setStatus, loadScript } = window.LK;
     const t = (k, v) => window.LKI.t(k, v);
-    pdfjsLib.GlobalWorkerOptions.workerSrc =
-      '../assets/vendor/pdfjs/pdf.worker.min.js';
+
+    /* 两个重依赖改为按需加载。此前它们在解析 HTML 时就无条件下载，而绝大多数
+     * 访问者只是看一眼这个工具长什么样：
+     *   pdf.min.js  105 KB gzip —— 选到文件、需要读页数时才用
+     *   docx.umd.js 135 KB gzip —— 只有真正点「转换」时才用
+     * 首屏因此从 289 KB gzip 降到 52 KB（html + i18n + app + css）。
+     * worker（1.1 MB）本来就不在首屏——pdf.js 是在 getDocument() 时才拉它的，
+     * 这里只是把它的路径赋值挪进同一个函数，保证在 pdfjsLib 存在之后才执行。 */
+    const PDFJS_SRC = '../assets/vendor/pdfjs/pdf.min.js';
+    const DOCX_SRC = '../assets/vendor/docx.umd.js';
+
+    async function ensurePdfjs() {
+      await loadScript(PDFJS_SRC);
+      pdfjsLib.GlobalWorkerOptions.workerSrc = '../assets/vendor/pdfjs/pdf.worker.min.js';
+    }
+
     let file = null;
 
     /* ================= text: items -> lines ================= */
@@ -530,6 +542,11 @@
      */
     async function convert(file, opts) {
       const dryRun = !!(opts && opts.dryRun);
+      /* 两个重依赖都只在这一步之后才被用到：pdfjs 用来读文档、docx 用来生成产物。
+       * 放在 convert 内部而不是只放在按钮的 click 处理器里，是因为测试钩子
+       * window.__lkConvert 会绕过 dropzone 直接调到这里——加载点必须覆盖两条路径。
+       * 二者互不依赖，并行加载。 */
+      await Promise.all([ensurePdfjs(), loadScript(DOCX_SRC)]);
       const bytes = await file.arrayBuffer();
       const src = await pdfjsLib.getDocument({ data: bytes.slice(0) }).promise;
       const flat = [];
@@ -603,6 +620,7 @@
       if (!f || (!/pdf$/i.test(f.type) && !/\.pdf$/i.test(f.name))) { setStatus(t('pd.badfile'), 'err'); return; }
       file = f;
       try {
+        await ensurePdfjs();
         const d = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise;
         setStatus(t('pd.ready', { name: f.name, n: d.numPages, size: formatBytes(f.size) }), 'ok');
         el('runBtn').disabled = false;

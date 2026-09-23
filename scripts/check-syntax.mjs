@@ -9,6 +9,7 @@
  *   4. 页面里 src/href 指向的本站资源是否真实存在（防止改路径时漏改某页）
  *   5. canonical 与 sitemap 的地址形态是否一致、是否都指向真实存在的文件
  *   6. 是否残留任何指向第三方 CDN 的引用（本项目承诺零外发请求）
+ *   7. LK.loadScript() 按需加载的 vendor 路径是否存在（这些路径不在 HTML 的 src= 属性里）
  *
  * 用法：node scripts/check-syntax.mjs
  * 环境变量：LK_ROOT 指定仓库根目录（供自测使用，默认取脚本上一级）
@@ -223,6 +224,41 @@ for (const f of [...htmlFiles, ...jsFiles]) {
   }
 }
 
+/* 7. 按需加载的本地资源路径也必须真实存在
+ *
+ * 背景：为了压首屏体积，重依赖（pdf.js / docx / jsPDF / html2canvas）改为运行时用
+ * LK.loadScript() 注入。代价是这些路径不再是 HTML 里的 src= 属性——第 3 项检查
+ * 扫不到它们，路径写错不会在本地或 CI 暴露，只会在用户点下「转换」的那一刻 404。
+ * 因此这里把浏览器侧代码里的 vendor 路径字符串也纳入校验，补回这部分覆盖。
+ *
+ * 扫描范围刻意限定在「浏览器会执行的代码」（HTML 内联脚本 + assets/*.js）：
+ *   - tests/ 里的 vendor 路径是**断言用的期望 URL**，不是加载路径，不该按文件存在性校验；
+ *   - eslint.config.js 里的 'assets/vendor/**' 是忽略 glob，同样不是路径。
+ * 这条边界是被误报教育出来的——第一版把这三类一起扫，直接报了 12 个假错误。
+ */
+const VENDOR_REF_RE = /['"`]([^'"`\s]*assets\/vendor\/[^'"`\s]+)['"`]/g;
+const browserFiles = [...htmlFiles, ...all.filter(f => /^assets[\\/][^\\/]+\.js$/.test(rel(f)))];
+let vendorRefCount = 0;
+
+for (const f of browserFiles) {
+  const src = fs.readFileSync(f, 'utf8');
+  let m;
+  while ((m = VENDOR_REF_RE.exec(src)) !== null) {
+    const u = m[1];
+    if (/^(https?:|\/\/)/.test(u)) continue;              // 外发引用由第 6 项负责
+    if (/[*?]/.test(u)) continue;                        // glob，不是可加载的路径
+    vendorRefCount++;
+    // 以 / 开头的是站点根相对路径，相对路径则相对当前文件解析
+    const target = u.startsWith('/') ? path.join(ROOT, u) : path.resolve(path.dirname(f), u);
+    if (!fs.existsSync(target)) {
+      errors.push(
+        `[按需加载] ${rel(f)} 引用的 vendor 路径不存在: ${u}\n` +
+        `      这条路径由 LK.loadScript() 在运行时注入，静态检查是唯一能提前发现写错的地方。`
+      );
+    }
+  }
+}
+
 /* 输出 */
 console.log('静态检查');
 console.log('─'.repeat(60));
@@ -230,6 +266,7 @@ console.log(`脚本文件         : ${fileCount}`);
 console.log(`内联 JavaScript  : ${jsCount}`);
 console.log(`JSON-LD 块       : ${jsonLdCount}`);
 console.log(`本站资源引用     : ${refCount}`);
+console.log(`按需加载路径     : ${vendorRefCount}（LK.loadScript 注入的 vendor 路径）`);
 console.log(`canonical 标签   : ${canonicalCount}（另有 1 个错误页不设 canonical）`);
 console.log(`页面自身地址核对 : ${selfUrlCount} 处（canonical / og:url / JSON-LD url）`);
 console.log(`sitemap URL      : ${sitemapCount}`);

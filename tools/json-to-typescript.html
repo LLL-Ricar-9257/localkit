@@ -227,6 +227,14 @@
       downloadBlob(new Blob([el('output').value], { type: 'text/plain' }),
         (el('rootName').value.trim() || 'types').toLowerCase() + '.ts');
     });
+
+    /* 自动化测试钩子：绕过 UI 直接驱动核心转换，与其余 18 个工具保持一致。
+     * 接受 JSON 文本或已解析的值，返回生成的 TypeScript 源码；解析失败照常抛出，
+     * 这样「错误路径」也能被断言，而不是只能测 happy path。 */
+    window.__lkConvert = (jsonText, rootName) => {
+      const json = typeof jsonText === 'string' ? JSON.parse(jsonText) : jsonText;
+      return convert(json, rootName || 'Root');
+    };
   })();
   </script>
 </body>

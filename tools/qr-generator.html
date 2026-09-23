@@ -181,6 +181,8 @@
       return c;
     }
 
+    /* 返回结构化结果供测试钩子使用（成功时对象、失败时 null）。
+     * 作为 input/change 的事件处理器使用时返回值会被忽略，不影响原有行为。 */
     function render() {
       try {
         const text = buildPayload();
@@ -192,12 +194,23 @@
         drawPng(qr);
         el('dlPng').disabled = false; el('dlSvg').disabled = false;
         setStatus(t('qr.ready', { n: qr.getModuleCount() }), 'ok');
+        return { modules: qr.getModuleCount(), payload: text };
       } catch (err) {
+        /* 失败时必须清掉上一次的产物。
+         * 输入框默认值是 https://example.com，所以页面一加载就有一个成功的二维码；
+         * 用户把输入清空后 render() 抛错，但此前这里只改状态文字——于是界面上仍留着
+         * 旧二维码，两个导出按钮也仍然可点，用户会下载到一个与当前输入无关的二维码。
+         * 这与 CHANGELOG 里 text-diff 修过的「超限时残留旧结果」是同一类缺陷：
+         * 报错的同时界面仍在展示一个看起来有效的结果。 */
+        el('preview').innerHTML = '';
+        current = { svg: null, canvas: null };
+        el('dlPng').disabled = true; el('dlSvg').disabled = true;
         if (err.message && /code length overflow/i.test(err.message)) {
           setStatus(t('qr.toobig'), 'err');
         } else {
           setStatus(err.message, 'err');
         }
+        return null;
       }
     }
 
@@ -243,6 +256,28 @@
     });
     ['content', 'wifiSsid', 'wifiPass', 'wifiSec', 'ec'].forEach(id =>
       el(id).addEventListener('input', render));
+
+    /* 自动化测试钩子：绕过 UI 直接设置输入并渲染，返回结构化结果。
+     * 让断言落在真实产出（模块数、payload、导出按钮状态）上，
+     * 而不是只看「输入框有值」这类间接指标。 */
+    window.__lkRender = (opts) => {
+      const o = opts || {};
+      if (o.type) el('type').value = o.type;
+      if (o.content != null) el('content').value = o.content;
+      if (o.wifiSsid != null) el('wifiSsid').value = o.wifiSsid;
+      if (o.wifiPass != null) el('wifiPass').value = o.wifiPass;
+      if (o.wifiSec != null) el('wifiSec').value = o.wifiSec;
+      if (o.ec) el('ec').value = o.ec;
+      const r = render();
+      return {
+        ok: !!r,
+        modules: r ? r.modules : 0,
+        payload: r ? r.payload : '',
+        hasSvg: !!el('preview').querySelector('svg'),
+        pngReady: !el('dlPng').disabled,
+        svgReady: !el('dlSvg').disabled,
+      };
+    };
 
     // initial render after i18n has applied, so the status line lands in the right language
     if (document.readyState === 'loading') {

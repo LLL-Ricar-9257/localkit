@@ -29,6 +29,7 @@ CI 会跑同样的命令，任何一项失败都不会合并。这些检查各�
 | `check:syntax` | JS/内联脚本语法、JSON-LD 合法性、本地资源引用存在、**无第三方 CDN 引用** | 本项目承诺零外发请求 |
 | `check:deploy` | `_headers` 重复响应头、缓存策略一致性、`_redirects` 状态码、**开发产物屏蔽覆盖率** | 写错了不会报错，只会静默不生效或静默泄露 |
 | `check:vendor` | `assets/vendor/` 内文件 sha256 与清单一致 | 依赖是提交进仓库的，需要防止被意外改动 |
+| `check:sitemap` | `sitemap.xml` 与生成结果一致、`<lastmod>` 未过期 | lastmod 必须随页面改动更新，手工维护必然漂移 |
 | `lint` | ESLint（ES2020 基线 + `no-var` / `prefer-const` / `eqeqeq`） | 风格靠人记必然漂移 |
 | `test:checks` | 用坏样本验证上面几个脚本确实会报错 | 裁判自己写错时会静默报告「全部通过」，比不检查更危险 |
 
@@ -55,7 +56,45 @@ CI 会跑同样的命令，任何一项失败都不会合并。这些检查各�
 2. 在 `index.html` 对应分类里加一张 `.tool-card`。
 3. 在 `assets/i18n.js` 里补上**中英两份**文案。
 
-别忘了用 `node scripts/check-syntax.mjs` 顺便验证资源路径，以及把新页面加入 `sitemap.xml`。
+然后跑 `node scripts/gen-sitemap.mjs` 重新生成 `sitemap.xml`——新页面会自动被收录，
+不需要手工编辑它。忘了跑的话 `npm run check:sitemap` 会失败并告诉你怎么修。
+
+别忘了用 `node scripts/check-syntax.mjs` 顺便验证资源路径。
+
+### 重依赖要按需加载，不要写在 `<script src>` 里
+
+首屏体积是这个站点的核心指标之一（见 README 的「为什么零第三方请求」）。
+`pdf-to-docx` 与 `docx-to-pdf` 的第三方库都通过 `LK.loadScript()` 在真正需要时才注入：
+
+```js
+const { loadScript } = window.LK;
+await loadScript('../assets/vendor/jszip.min.js');
+```
+
+同一个路径只会被插入一次，失败时会清掉缓存以便重试。**加载点必须放在实际用到它的函数内部**，
+不能只放在按钮的 click 处理器里——`window.__lk*` 测试钩子会绕过 UI 直接调用那些函数，
+放错位置会让测试路径下库还没加载。
+
+这些路径不在 HTML 的 `src=` 属性里，所以由 `check-syntax` 的第 7 项专门校验其存在性；
+`tests/01-pages.spec.js` 里也有断言守着「首屏不下载这些库」。
+
+### 交互元素要键盘可达
+
+拖拽区由 `LK.setupDropzone()` 统一补上 `role`/`tabindex`/Enter/Space 处理，不要在各页自己实现。
+新增其它自定义交互控件（可点的 `div` 等）时请一并考虑键盘用户：
+`assets/style.css` 里已有全局 `:focus-visible` 样式，只要元素可聚焦就会获得可见焦点环。
+
+### 测试不要跨到操作系统边界
+
+断言「真实浏览器行为」通常比断言属性更硬，但**一旦这一步跨到操作系统就会变成不可控依赖**。
+已有的教训是文件选择对话框：用 `page.waitForEvent('filechooser')` 断言时，
+`--repeat-each=20` 下 Space 有 5 次拿不到事件（同一条路径的 Enter 却 20/20），
+而失败时原生对话框已经打开、会卡住渲染进程，`worker` 停止后 5 分钟都退不出去——
+**一条偶发用例能把整份套件拖成一小时不返回**。
+
+现在的做法（见 `tests/helpers.js` 的 `expectKeyTriggersFilePicker`）是把断言停在
+「真实 `<input type="file">` 收到了 click 事件」，用 `preventDefault` 把对话框挡在门外。
+性能排查同理：`trace` 默认开启会逐帧写录屏，本地用 `npx playwright test --trace=off` 快很多。
 
 ## 工具实现的三个坑
 

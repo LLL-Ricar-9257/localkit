@@ -39,7 +39,11 @@ test.describe('隐私承诺', () => {
   });
 
   test('pdf.js 的 worker 也走本地路径', async ({ page }) => {
+    /* workerSrc 现在是在按需加载 pdf.js 时才被赋值的——首屏 window.pdfjsLib 还不存在。
+     * 断言的对象没变（worker 必须是本站路径），只是触发方式改为先走一遍真实加载路径。 */
     await page.goto('/tools/pdf-to-docx.html');
+    await callHookWithFile(page, '__lkConvert', 'sample.pdf', 'application/pdf');
+
     const worker = await page.evaluate(() => window.pdfjsLib.GlobalWorkerOptions.workerSrc);
     expect(worker).toContain('/assets/vendor/');
     expect(worker).not.toMatch(/^https?:/);

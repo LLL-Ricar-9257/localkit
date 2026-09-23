@@ -129,12 +129,13 @@ Cloudflare Pages 会把 `/foo.html` **308 永久重定向**到 `/foo`。这**不
 ```bash
 npm install
 
-npm run check        # 静态检查（i18n / 语法 / 部署配置 / 依赖哈希）
+npm run check        # 静态检查（i18n / 语法 / 部署配置 / 依赖哈希 / sitemap）
 npm run lint         # ESLint
 npm run test:checks  # 校验脚本自身的自测（坏样本注入）
 npm run smoke        # 探测线上：缓存策略、零第三方脚本、安全头是否真生效
 npm test             # Playwright 端到端测试（会自动起本地服务器）
 npm run serve        # 仅启动本地预览服务器
+npm run gen:sitemap  # 改了页面后重新生成 sitemap.xml（含 lastmod）
 ```
 
 `npm run smoke` 是唯一会访问线上环境的检查，因此**不在**默认的 `check` 里。
@@ -148,16 +149,19 @@ CI 里用的是 `npm run smoke -- --wait 180`。因为该 job 在 push 后几秒
 （实测遇到过：push 后 12 秒跑冒烟时 `canonical` 组全红，两分钟后再跑全绿）。
 `--wait` 是**有界**的：预算耗尽仍失败即判定为真的不一致，照常失败。
 
-`npm run check` 包含四项：
+`npm run check` 包含五项：
 
 - `check:i18n` —— 校验中英字典键是否对齐、页面引用的键是否存在、**静态兜底文案是否与字典英文一致**、
   是否存在无人引用的死键。页面静态源码与运行时字典是同一句文案的两份拷贝，这是防止二者漂移的门禁。
 - `check:syntax` —— 校验所有 JS 与内联脚本的语法、JSON-LD 是否为合法 JSON、页面引用的本地资源是否存在、
-  以及是否残留任何指向第三方 CDN 的引用。
+  按需加载（`LK.loadScript`）的 vendor 路径是否存在、以及是否残留任何指向第三方 CDN 的引用。
 - `check:deploy` —— 校验 `_headers` 是否重复设置同名响应头（Cloudflare 会把它们逗号合并，
   产出互相冲突的指令）、`_redirects` 是否使用了不受支持的状态码、
   以及**开发产物是否都被屏蔽**（否则 `tests/`、`scripts/` 会连同站点一起被公开服务）。
 - `check:vendor` —— 比对 `assets/vendor/` 下每个文件的 sha256 与清单是否一致。
+- `check:sitemap` —— 比对 `sitemap.xml` 与 `scripts/gen-sitemap.mjs` 的生成结果是否一致。
+  `<lastmod>` 必须随页面改动更新，靠人记必然漂移，因此由生成器按内容哈希维护
+  （日期清单在 `scripts/sitemap-lastmod.json`）。改了页面后跑 `npm run gen:sitemap`。
 
 `npm run test:checks` 是给校验脚本本身做的体检：它把仓库复制到临时目录，逐个注入**已知缺陷**
 （文案不一致、缺词条、语法错误、CDN 残留、`_redirects` 写了 404、`_headers` 重复响应头、依赖被篡改……），

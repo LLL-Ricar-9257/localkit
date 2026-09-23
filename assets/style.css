@@ -41,6 +41,15 @@ body {
 a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+/* 键盘焦点可见性
+ * 此前全站没有任何 :focus 规则，键盘用户只能依赖浏览器默认焦点环——
+ * 在渐变按钮和浅色拖拽区上几乎看不出来。统一用 :focus-visible：只在键盘导航时出现，
+ * 鼠标点击不会留下多余轮廓。outline 会跟随元素自身的圆角，不需要也不应该改 border-radius。 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* Header */
 .site-header {
   position: sticky; top: 0; z-index: 50;
