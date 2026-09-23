@@ -119,13 +119,13 @@ test.describe('文案双源一致性回归', () => {
     // 配置项形同虚设；翻译完成后又会把硬编码 href 写回来。
     await page.goto('/donate.html');
     const href = await page.getAttribute('#repoLink', 'href');
-    expect(href).toBe('https://github.com/zm2yp5sggv-bit/localkit');
+    expect(href).toBe('https://github.com/LLL-Ricar-9257/localkit');
 
     // 切换语言后链接仍应存在且正确（翻译会重建这段富文本）
     await page.click('#langBtn');
-    await expect(page.locator('#repoLink')).toHaveAttribute('href', 'https://github.com/zm2yp5sggv-bit/localkit');
+    await expect(page.locator('#repoLink')).toHaveAttribute('href', 'https://github.com/LLL-Ricar-9257/localkit');
 
     const gh = await page.getAttribute('#ghLink', 'href');
-    expect(gh).toBe('https://github.com/zm2yp5sggv-bit');
+    expect(gh).toBe('https://github.com/LLL-Ricar-9257');
   });
 });

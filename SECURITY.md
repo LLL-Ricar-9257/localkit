@@ -4,7 +4,7 @@
 
 请通过 **GitHub Security Advisories** 私下报告，不要开公开 Issue：
 
-👉 https://github.com/zm2yp5sggv-bit/localkit/security/advisories/new
+👉 https://github.com/LLL-Ricar-9257/localkit/security/advisories/new
 
 如果无法使用该入口，也可以开一个只写「需要私下联系」的 Issue，我会回复提供邮箱。
 

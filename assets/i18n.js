@@ -332,7 +332,7 @@
       'about.why.h2': 'Why we built it',
       'about.why.p': 'We got tired of “free” converter sites that upload your documents, watermark the output, cap you at two files a day and hide the real limits behind a subscription. LocalKit does one thing differently — local processing — and everything else follows: no sign-up, no watermarks, no artificial limits.',
       'about.contact.h2': 'Contact',
-      'about.contact.p': 'Found a bug, or is there a tool you\'d love to see? <a href="https://github.com/zm2yp5sggv-bit/localkit/issues" rel="noopener">Open an issue on GitHub</a> or reach me at <a href="https://github.com/zm2yp5sggv-bit" rel="noopener">github.com/zm2yp5sggv-bit</a> — everything gets read.',
+      'about.contact.p': 'Found a bug, or is there a tool you\'d love to see? <a href="https://github.com/LLL-Ricar-9257/localkit/issues" rel="noopener">Open an issue on GitHub</a> or reach me at <a href="https://github.com/LLL-Ricar-9257" rel="noopener">github.com/LLL-Ricar-9257</a> — everything gets read.',
 
       'priv.title': 'Privacy Policy — LocalKit',
       'priv.h1': 'Privacy Policy',
@@ -350,7 +350,7 @@
       'priv.changes.h2': 'Changes',
       'priv.changes.p': 'If this policy changes materially, we will update this page with a new “last updated” date.',
       'priv.contact.h2': 'Contact',
-      'priv.contact.p': 'Questions about privacy? <a href="https://github.com/zm2yp5sggv-bit/localkit/issues" rel="noopener">Open an issue on GitHub</a> and you will get a human answer.',
+      'priv.contact.p': 'Questions about privacy? <a href="https://github.com/LLL-Ricar-9257/localkit/issues" rel="noopener">Open an issue on GitHub</a> and you will get a human answer.',
 
       'nav.donate': '♥ Sponsor',
       'don.title': 'Support LocalKit — Donate',
@@ -365,7 +365,7 @@
       'don.note.p': 'Full transparency: donations pay the domain (about ¥30/year) and hosting (currently ¥0). Anything beyond that funds new tools and thanks the maintainer.',
       'don.thanks.p': 'Not in a position to donate? Sharing LocalKit with one friend who needs it helps just as much. ♥',
       'don.os.h2': 'Open source',
-      'don.os.p': 'The whole site is a set of static pages — view source, self-host it or fork it. Repository: <a id="repoLink" href="https://github.com/zm2yp5sggv-bit/localkit" rel="noopener">github.com/zm2yp5sggv-bit/localkit</a>.',
+      'don.os.p': 'The whole site is a set of static pages — view source, self-host it or fork it. Repository: <a id="repoLink" href="https://github.com/LLL-Ricar-9257/localkit" rel="noopener">github.com/LLL-Ricar-9257/localkit</a>.',
       'index.cat.text': '📝 Text tools',
       'index.card11.t': 'Case Converter', 'index.card11.d': 'Switch between UPPER, lower, camelCase, snake_case and more.',
       'index.card12.t': 'Text Statistics', 'index.card12.d': 'Count characters, words, lines and reading time as you type.',
@@ -905,7 +905,7 @@
       'about.why.h2': '为什么做这个站',
       'about.why.p': '我们受够了那些「免费」转换网站：上传你的文档、给输出加水印、每天限两个文件、把真正的限制藏在订阅墙后面。LocalKit 只做一件不同的事——本地处理，其余一切随之而来：无需注册、没有水印、没有人为限制。',
       'about.contact.h2': '联系我们',
-      'about.contact.p': '发现 bug，或希望增加某个工具？<a href="https://github.com/zm2yp5sggv-bit/localkit/issues" rel="noopener">在 GitHub 提 Issue</a>，或到 <a href="https://github.com/zm2yp5sggv-bit" rel="noopener">github.com/zm2yp5sggv-bit</a> 找我——条条必读。',
+      'about.contact.p': '发现 bug，或希望增加某个工具？<a href="https://github.com/LLL-Ricar-9257/localkit/issues" rel="noopener">在 GitHub 提 Issue</a>，或到 <a href="https://github.com/LLL-Ricar-9257" rel="noopener">github.com/LLL-Ricar-9257</a> 找我——条条必读。',
 
       'priv.title': '隐私政策 — LocalKit',
       'priv.h1': '隐私政策',
@@ -923,7 +923,7 @@
       'priv.changes.h2': '政策变更',
       'priv.changes.p': '如本政策发生重大变更，我们将在本页面更新并标注新的「最后更新」日期。',
       'priv.contact.h2': '联系我们',
-      'priv.contact.p': '对隐私有疑问？<a href="https://github.com/zm2yp5sggv-bit/localkit/issues" rel="noopener">在 GitHub 提 Issue</a>，会有人类回复你。',
+      'priv.contact.p': '对隐私有疑问？<a href="https://github.com/LLL-Ricar-9257/localkit/issues" rel="noopener">在 GitHub 提 Issue</a>，会有人类回复你。',
 
       'nav.donate': '♥ 赞助',
       'don.title': '支持 LocalKit——赞助',
@@ -938,7 +938,7 @@
       'don.note.p': '完全透明：赞助用于域名（约 ¥30/年）与托管（目前 ¥0）；有余则投入新工具开发，并感谢维护者的投入。',
       'don.thanks.p': '暂时不方便赞助？把 LocalKit 告诉一个用得上的朋友，同样是巨大的帮助。♥',
       'don.os.h2': '开源',
-      'don.os.p': '全站就是一组静态页面——可以查看源码、自行部署或 fork。仓库地址：<a id="repoLink" href="https://github.com/zm2yp5sggv-bit/localkit" rel="noopener">github.com/zm2yp5sggv-bit/localkit</a>。',
+      'don.os.p': '全站就是一组静态页面——可以查看源码、自行部署或 fork。仓库地址：<a id="repoLink" href="https://github.com/LLL-Ricar-9257/localkit" rel="noopener">github.com/LLL-Ricar-9257/localkit</a>。',
       'index.cat.text': '📝 文本工具',
       'index.card11.t': '大小写转换', 'index.card11.d': '大写、小写、驼峰、下划线等格式一键切换。',
       'index.card12.t': '文本统计', 'index.card12.d': '边输入边统计字符、词数、行数与阅读时长。',
